@@ -1,0 +1,27 @@
+
+<script>
+const prompt = "Hello, how are you doing today?";
+const apiKey = "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";
+
+fetch("https://api.openai.com/v1/engines/davinci-codex/completions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${apiKey}`,
+  },
+  body: JSON.stringify({
+    prompt: prompt,
+    max_tokens: 60,
+    n: 1,
+    stop: "."
+  }),
+})
+.then((response) => response.json())
+.then((data) => {
+  const text = data.choices[0].text;
+  console.log(text);
+})
+.catch((error) => {
+  console.error(error);
+});
+</script>
