@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASP.NET Framework MVC — Azure KeyVault 操作手册</title>
+<style>
+:root {
+  --bg: #0d1117; --bg-card: #161b22; --bg-code: #1c2128;
+  --border: #30363d; --text: #c9d1d9; --text-h: #f0f6fc;
+  --text-muted: #8b949e; --accent: #58a6ff; --accent2: #3fb950;
+  --warn: #d29922; --danger: #f85149; --purple: #bc8cff;
+  --heading: #79c0ff; --table-h: #1f6feb; --tag-bg: #1c2128;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; }
+.container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+/* Cover */
+.cover { text-align: center; padding: 80px 0 60px; border-bottom: 1px solid var(--border); margin-bottom: 48px; }
+.cover h1 { font-size: 42px; color: var(--accent); font-weight: 700; margin-bottom: 12px; }
+.cover h2 { font-size: 24px; color: var(--text-muted); font-weight: 400; }
+.cover .meta { margin-top: 20px; color: var(--text-muted); font-size: 14px; }
+
+/* TOC */
+.toc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 24px 32px; margin-bottom: 48px; }
+.toc h3 { color: var(--heading); margin-bottom: 12px; font-size: 16px; }
+.toc ol { padding-left: 20px; }
+.toc li { margin: 6px 0; color: var(--text-muted); }
+.toc a { color: var(--accent); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+/* Sections */
+h1 { font-size: 28px; color: var(--heading); margin: 56px 0 24px; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+h2 { font-size: 20px; color: var(--text-h); margin: 36px 0 16px; }
+h3 { font-size: 17px; color: var(--accent2); margin: 28px 0 12px; }
+p { margin: 12px 0; }
+ul, ol { margin: 8px 0 16px 24px; }
+li { margin: 4px 0; }
+
+/* Code blocks */
+pre { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; overflow-x: auto; margin: 12px 0 20px; font-size: 13px; line-height: 1.5; }
+code { font-family: "JetBrains Mono", "Fira Code", Consolas, monospace; }
+pre code { color: var(--text); }
+code.inline { background: var(--bg-code); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--accent2); }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+th { background: var(--table-h); color: #fff; padding: 10px 14px; text-align: left; font-weight: 600; }
+td { padding: 8px 14px; border-bottom: 1px solid var(--border); }
+tr:hover td { background: rgba(88,166,255,0.04); }
+
+/* Callout */
+.callout { background: var(--bg-card); border-left: 4px solid var(--accent); border-radius: 0 6px 6px 0; padding: 14px 20px; margin: 16px 0; font-size: 14px; }
+.callout.warn { border-left-color: var(--warn); }
+.callout.danger { border-left-color: var(--danger); }
+.callout strong { color: var(--text-h); }
+
+/* Diagram */
+.diagram { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin: 16px 0; font-family: "JetBrains Mono", Consolas, monospace; font-size: 13px; line-height: 1.6; white-space: pre; overflow-x: auto; color: var(--text-muted); }
+
+.tag { display: inline-block; background: var(--tag-bg); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 12px; color: var(--text-muted); margin: 2px; }
+
+/* Footer */
+.footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="cover">
+  <h1>Azure KeyVault</h1>
+  <h2>ASP.NET Framework MVC 操作手册</h2>
+  <div class="meta">v1.0 | 2026-05-28 | .NET Framework 4.7.2+ | Secret / Key / Certificate CRUD</div>
+</div>
+
+<div class="toc">
+  <h3>目录</h3>
+  <ol>
+    <li><a href="#s1">概述与架构</a></li>
+    <li><a href="#s2">环境准备与 NuGet 包</a></li>
+    <li><a href="#s3">认证方式说明</a></li>
+    <li><a href="#s4">KeyVaultService — 统一服务类</a>
+      <ol>
+        <li><a href="#s4-1">服务类定义与初始化</a></li>
+        <li><a href="#s4-2">Secret 操作（CRUD）</a></li>
+        <li><a href="#s4-3">Key 操作（CRUD）</a></li>
+        <li><a href="#s4-4">Certificate 操作（CRUD）</a></li>
+        <li><a href="#s4-5">备份与恢复</a></li>
+      </ol>
+    </li>
+    <li><a href="#s5">Controller 层调用示例</a></li>
+    <li><a href="#s6">Web.config 配置</a></li>
+    <li><a href="#s7">RBAC 权限配置速查</a></li>
+    <li><a href="#s8">最佳实践与注意事项</a></li>
+    <li><a href="#s9">常见错误排查</a></li>
+  </ol>
+</div>
+
+<!-- Section 1 -->
+<h1 id="s1">1. 概述与架构</h1>
+<h2>1.1 Key Vault 对象类型</h2>
+<div class="diagram">Key Vault
+├── Secrets（机密）──── 存储字符串型敏感数据
+│   "Database-ConnectionString"  →  "Server=tcp:mydb..."
+│   "ThirdParty-ApiKey"          →  "sk-abc123xyz..."
+│   特点：值始终加密存储，支持版本管理，支持自动过期
+│
+├── Keys（密钥）────── 存储加密密钥（由 Key Vault 硬件管理）
+│   "data-encryption-key"  →  RSA-4096
+│   "signing-key"          →  EC-P256
+│   特点：私钥永不离开 Key Vault，支持云端加密/解密/签名/验签
+│
+└── Certificates（证书）── 存储 X.509 证书（含私钥）
+    "myapp-ssl-cert"  →  *.example.com
+    特点：支持自动续期、SSL/TLS、S/MIME</div>
+
+<h2>1.2 安全信任链</h2>
+<div class="diagram">应用程序 ──① 身份认证──▶ Azure AD (Entra ID)
+                               │
+                         ② RBAC 授权
+                               │
+                         ③ 网络隔离
+                               │
+应用程序 ◀──④ 返回数据── Azure Key Vault
+
+三层防护：认证（你是谁）→ 授权（你能做什么）→ 网络（你能访问吗）</div>
+
+<h2>1.3 KeyVaultService 设计</h2>
+<table>
+  <tr><th>功能模块</th><th>SDK 包</th><th>主要操作</th></tr>
+  <tr><td>Secret 管理</td><td><code class="inline">Azure.Security.KeyVault.Secrets</code></td><td>增删改查、版本管理、备份恢复</td></tr>
+  <tr><td>Key 管理</td><td><code class="inline">Azure.Security.KeyVault.Keys</code></td><td>创建/删除密钥、加密/解密/签名/验签</td></tr>
+  <tr><td>Certificate 管理</td><td><code class="inline">Azure.Security.KeyVault.Certificates</code></td><td>导入/创建证书、获取证书链</td></tr>
+</table>
+
+<!-- Section 2 -->
+<h1 id="s2">2. 环境准备与 NuGet 包</h1>
+<h2>2.1 NuGet 包安装</h2>
+<pre><code># 认证
+Install-Package Azure.Identity -Version 1.13.1
+
+# Secret 操作
+Install-Package Azure.Security.KeyVault.Secrets -Version 4.7.0
+
+# Key 操作
+Install-Package Azure.Security.KeyVault.Keys -Version 4.7.0
+
+# Certificate 操作
+Install-Package Azure.Security.KeyVault.Certificates -Version 4.7.0
+
+# 交互式登录（.NET Framework 需要）
+Install-Package Microsoft.Identity.Client -Version 4.66.1</code></pre>
+
+<h2>2.2 项目文件结构</h2>
+<div class="diagram">📁 项目结构:
+├── Services/
+│   └── KeyVaultService.cs          ← 统一服务类（本文档核心）
+├── Models/
+│   └── KeyVaultModels.cs          ← 数据模型
+├── App_Start/
+│   └── KeyVaultConfig.cs          ← 初始化配置
+├── Controllers/
+│   └── KeyVaultController.cs      ← 调用示例
+├── Global.asax.cs                  ← 应用启动初始化
+└── Web.config                      ← Vault URL 等配置</div>
+
+<!-- Section 3 -->
+<h1 id="s3">3. 认证方式说明</h1>
+<table>
+  <tr><th>认证方式</th><th>适用场景</th><th>配置方法</th></tr>
+  <tr><td><strong>Managed Identity</strong></td><td>部署到 Azure App Service / VM</td><td>Azure Portal 启用系统托管标识</td></tr>
+  <tr><td>EnvironmentCredential</td><td>CI/CD（Azure DevOps）</td><td>设置环境变量</td></tr>
+  <tr><td><strong>AzureCliCredential</strong></td><td>本地开发</td><td>执行 <code class="inline">az login</code></td></tr>
+  <tr><td>VisualStudioCredential</td><td>VS IDE 调试</td><td>VS 中登录 Azure 账户</td></tr>
+  <tr><td>InteractiveBrowser</td><td>本地开发（兜底）</td><td>弹出浏览器登录</td></tr>
+</table>
+<div class="callout"><strong>DefaultAzureCredential</strong> 会自动按以上顺序尝试认证，无需手动选择。</div>
+
+<!-- Section 4 -->
+<h1 id="s4">4. KeyVaultService — 统一服务类</h1>
+
+<h2 id="s4-1">4.1 服务类定义与初始化</h2>
+<pre><code>using Azure;
+using Azure.Identity;
+using Azure.Security.KeyVault.Certificates;
+using Azure.Security.KeyVault.Keys;
+using Azure.Security.KeyVault.Secrets;
+
+namespace YourProject.Services
+{
+    public class KeyVaultService
+    {
+        private readonly SecretClient _secretClient;
+        private readonly KeyClient _keyClient;
+        private readonly CertificateClient _certificateClient;
+
+        public KeyVaultService(
+            string vaultUrl,
+            string tenantId = null,
+            string managedIdentityClientId = null)
+        {
+            var options = new DefaultAzureCredentialOptions();
+            if (!string.IsNullOrEmpty(tenantId))
+                options.TenantId = tenantId;
+            if (!string.IsNullOrEmpty(managedIdentityClientId))
+                options.ManagedIdentityClientId = managedIdentityClientId;
+            options.ExcludeInteractiveBrowserCredential = false;
+
+            var credential = new DefaultAzureCredential(options);
+            var uri = new Uri(vaultUrl);
+
+            _secretClient = new SecretClient(uri, credential);
+            _keyClient = new KeyClient(uri, credential);
+            _certificateClient = new CertificateClient(uri, credential);
+        }</code></pre>
+
+<h2 id="s4-2">4.2 Secret 操作（CRUD）</h2>
+
+<h3>4.2.1 创建/更新 Secret</h3>
+<pre><code>/// &lt;summary&gt;设置 Secret（存在则创建新版本，不存在则创建）&lt;/summary&gt;
+public async Task&lt;KeyVaultSecret&gt; SetSecretAsync(
+    string name, string value,
+    string contentType = null,
+    DateTimeOffset? expiresOn = null,
+    Dictionary&lt;string, string&gt; tags = null)
+{
+    var secret = new KeyVaultSecret(name, value);
+    if (!string.IsNullOrEmpty(contentType))
+        secret.Properties.ContentType = contentType;
+    if (expiresOn.HasValue)
+        secret.Properties.ExpiresOn = expiresOn.Value;
+    if (tags != null)
+        foreach (var tag in tags)
+            secret.Properties.Tags[tag.Key] = tag.Value;
+
+    var response = await _secretClient.SetSecretAsync(secret);
+    return response.Value;
+}
+
+/// &lt;summary&gt;批量设置 Secret&lt;/summary&gt;
+public async Task&lt;(int succeeded, int failed, List&lt;string&gt; errors)&gt;
+    SetSecretsAsync(Dictionary&lt;string, string&gt; secrets,
+        Dictionary&lt;string, string&gt; commonTags = null)
+{
+    int succeeded = 0, failed = 0;
+    var errors = new List&lt;string&gt;();
+    foreach (var kvp in secrets)
+    {
+        try { await SetSecretAsync(kvp.Key, kvp.Value, tags: commonTags); succeeded++; }
+        catch (Exception ex) { failed++; errors.Add($"{kvp.Key}: {ex.Message}"); }
+    }
+    return (succeeded, failed, errors);
+}</code></pre>
+
+<h3>4.2.2 读取 Secret</h3>
+<pre><code>/// &lt;summary&gt;获取 Secret 值（最新版本）&lt;/summary&gt;
+public async Task&lt;string&gt; GetSecretAsync(string name)
+{
+    var response = await _secretClient.GetSecretAsync(name);
+    return response.Value.Value;
+}
+
+/// &lt;summary&gt;获取指定版本的 Secret&lt;/summary&gt;
+public async Task&lt;string&gt; GetSecretVersionAsync(string name, string version)
+{
+    var response = await _secretClient.GetSecretAsync(name, version);
+    return response.Value.Value;
+}
+
+/// &lt;summary&gt;获取 Secret 属性列表（不含值）&lt;/summary&gt;
+public async Task&lt;List&lt;SecretPropertiesInfo&gt;&gt; ListSecretsAsync()
+{
+    var result = new List&lt;SecretPropertiesInfo&gt;();
+    await foreach (var prop in _secretClient.GetPropertiesOfSecretsAsync())
+    {
+        result.Add(new SecretPropertiesInfo
+        {
+            Name = prop.Name, Version = prop.Version,
+            CreatedOn = prop.CreatedOn, UpdatedOn = prop.UpdatedOn,
+            ExpiresOn = prop.ExpiresOn, Enabled = prop.Enabled,
+            Tags = prop.Tags.ToDictionary(t =&gt; t.Key, t =&gt; t.Value)
+        });
+    }
+    return result;
+}</code></pre>
+
+<h3>4.2.3 删除 Secret</h3>
+<pre><code>/// &lt;summary&gt;软删除 Secret（90天内可恢复）&lt;/summary&gt;
+public async Task DeleteSecretAsync(string name)
+{
+    var operation = await _secretClient.StartDeleteSecretAsync(name);
+    await operation.WaitForCompletionAsync();
+}
+
+/// &lt;summary&gt;恢复已软删除的 Secret&lt;/summary&gt;
+public async Task RecoverSecretAsync(string name)
+{
+    var operation = await _secretClient.StartRecoverDeletedSecretAsync(name);
+    await operation.WaitForCompletionAsync();
+}
+
+/// &lt;summary&gt;永久清除 Secret（不可恢复！）&lt;/summary&gt;
+public async Task PurgeSecretAsync(string name)
+{
+    await _secretClient.PurgeDeletedSecretAsync(name);
+}</code></pre>
+
+<h3>4.2.4 检查 Secret 存在 / 更新属性</h3>
+<pre><code>public async Task&lt;bool&gt; SecretExistsAsync(string name)
+{
+    try { await _secretClient.GetSecretAsync(name); return true; }
+    catch (RequestFailedException ex) when (ex.Status == 404) { return false; }
+}
+
+/// &lt;summary&gt;更新 Secret 属性（启用/禁用、过期时间，不修改值）&lt;/summary&gt;
+public async Task UpdateSecretPropertiesAsync(
+    string name, string version = null,
+    bool? enabled = null,
+    DateTimeOffset? expiresOn = null,
+    Dictionary&lt;string, string&gt; tags = null)
+{
+    SecretProperties props;
+    if (string.IsNullOrEmpty(version))
+        props = (await _secretClient.GetSecretAsync(name)).Value.Properties;
+    else
+        props = (await _secretClient.GetSecretAsync(name, version)).Value.Properties;
+
+    if (enabled.HasValue) props.Enabled = enabled.Value;
+    if (expiresOn.HasValue) props.ExpiresOn = expiresOn.Value;
+    if (tags != null) { props.Tags.Clear(); foreach (var t in tags) props.Tags[t.Key] = t.Value; }
+    await _secretClient.UpdateSecretPropertiesAsync(props);
+}</code></pre>
+
+<h2 id="s4-3">4.3 Key 操作（CRUD）</h2>
+
+<h3>4.3.1 创建 Key</h3>
+<pre><code>/// &lt;summary&gt;创建 RSA 密钥&lt;/summary&gt;
+public async Task&lt;KeyVaultKey&gt; CreateRsaKeyAsync(
+    string name, int keySize = 2048,
+    bool hardwareProtected = false,
+    Dictionary&lt;string, string&gt; tags = null)
+{
+    var options = new CreateRsaKeyOptions(name, hardwareProtected) { KeySize = keySize };
+    if (tags != null) foreach (var tag in tags) options.Tags[tag.Key] = tag.Value;
+    return (await _keyClient.CreateRsaKeyAsync(options)).Value;
+}
+
+/// &lt;summary&gt;创建 EC（椭圆曲线）密钥&lt;/summary&gt;
+public async Task&lt;KeyVaultKey&gt; CreateEcKeyAsync(
+    string name, string curveName = "P-256",
+    bool hardwareProtected = false,
+    Dictionary&lt;string, string&gt; tags = null)
+{
+    var options = new CreateEcKeyOptions(name, hardwareProtected)
+    {
+        CurveName = curveName switch {
+            "P-256" =&gt; KeyCurveName.P256, "P-384" =&gt; KeyCurveName.P384,
+            "P-521" =&gt; KeyCurveName.P521, _ =&gt; KeyCurveName.P256
+        }
+    };
+    if (tags != null) foreach (var tag in tags) options.Tags[tag.Key] = tag.Value;
+    return (await _keyClient.CreateEcKeyAsync(options)).Value;
+}</code></pre>
+
+<h3>4.3.2 Key 加密/解密/签名</h3>
+<pre><code>/// &lt;summary&gt;使用 Key Vault 密钥加密数据&lt;/summary&gt;
+public async Task&lt;byte[]&gt; EncryptAsync(string keyName, byte[] plaintext,
+    string algorithm = "RsaOaep256")
+{
+    var client = _keyClient.GetCryptographyClient(keyName);
+    var algo = algorithm switch {
+        "RsaOaep" =&gt; EncryptionAlgorithm.RsaOaep,
+        "RsaOaep256" =&gt; EncryptionAlgorithm.RsaOaep256,
+        _ =&gt; EncryptionAlgorithm.RsaOaep256
+    };
+    return (await client.EncryptAsync(algo, plaintext)).Ciphertext;
+}
+
+/// &lt;summary&gt;使用 Key Vault 密钥解密数据&lt;/summary&gt;
+public async Task&lt;byte[]&gt; DecryptAsync(string keyName, byte[] ciphertext,
+    string algorithm = "RsaOaep256")
+{
+    var client = _keyClient.GetCryptographyClient(keyName);
+    var algo = algorithm switch {
+        "RsaOaep" =&gt; EncryptionAlgorithm.RsaOaep,
+        "RsaOaep256" =&gt; EncryptionAlgorithm.RsaOaep256,
+        _ =&gt; EncryptionAlgorithm.RsaOaep256
+    };
+    return (await client.DecryptAsync(algo, ciphertext)).Plaintext;
+}
+
+/// &lt;summary&gt;使用 Key Vault 密钥签名&lt;/summary&gt;
+public async Task&lt;byte[]&gt; SignAsync(string keyName, byte[] digest,
+    string algorithm = "RS256")
+{
+    var client = _keyClient.GetCryptographyClient(keyName);
+    var algo = algorithm switch {
+        "RS256" =&gt; SignatureAlgorithm.RS256,
+        "PS256" =&gt; SignatureAlgorithm.PS256,
+        "ES256" =&gt; SignatureAlgorithm.ES256,
+        _ =&gt; SignatureAlgorithm.RS256
+    };
+    return (await client.SignAsync(algo, digest)).Signature;
+}
+
+/// &lt;summary&gt;使用 Key Vault 密钥验签&lt;/summary&gt;
+public async Task&lt;bool&gt; VerifyAsync(string keyName, byte[] digest,
+    byte[] signature, string algorithm = "RS256")
+{
+    var client = _keyClient.GetCryptographyClient(keyName);
+    var algo = algorithm switch {
+        "RS256" =&gt; SignatureAlgorithm.RS256,
+        "PS256" =&gt; SignatureAlgorithm.PS256,
+        _ =&gt; SignatureAlgorithm.RS256
+    };
+    return (await client.VerifyAsync(algo, digest, signature)).IsValid;
+}</code></pre>
+
+<h3>4.3.3 删除 Key</h3>
+<pre><code>public async Task DeleteKeyAsync(string name)
+{
+    var operation = await _keyClient.StartDeleteKeyAsync(name);
+    await operation.WaitForCompletionAsync();
+}
+
+public async Task RecoverKeyAsync(string name)
+{
+    var operation = await _keyClient.StartRecoverDeletedKeyAsync(name);
+    await operation.WaitForCompletionAsync();
+}
+
+public async Task PurgeKeyAsync(string name)
+    => await _keyClient.PurgeDeletedKeyAsync(name);</code></pre>
+
+<h2 id="s4-4">4.4 Certificate 操作（CRUD）</h2>
+
+<h3>4.4.1 创建/导入 Certificate</h3>
+<pre><code>/// &lt;summary&gt;创建自签名证书&lt;/summary&gt;
+public async Task&lt;KeyVaultCertificateWithPolicy&gt;
+    CreateSelfSignedCertificateAsync(
+        string name, string subject = "CN=myapp",
+        int validityMonths = 12,
+        Dictionary&lt;string, string&gt; tags = null)
+{
+    var policy = new CertificatePolicy(subject)
+    {
+        ValidityInMonths = validityMonths,
+        KeySize = 2048, Exportable = true
+    };
+    var options = new CertificateCreationOptions(name, policy);
+    if (tags != null) foreach (var tag in tags) options.Tags[tag.Key] = tag.Value;
+
+    var operation = await _certificateClient.StartCreateCertificateAsync(options);
+    return (await operation.WaitForCompletionAsync()).Value;
+}
+
+/// &lt;summary&gt;导入已有证书（PFX 格式）&lt;/summary&gt;
+public async Task&lt;KeyVaultCertificateWithPolicy&gt;
+    ImportCertificateAsync(string name, byte[] certificateBytes,
+        string password = null, Dictionary&lt;string, string&gt; tags = null)
+{
+    var options = new ImportCertificateOptions(name, certificateBytes);
+    if (!string.IsNullOrEmpty(password)) options.Password = password;
+    if (tags != null) foreach (var tag in tags) options.Tags[tag.Key] = tag.Value;
+    return (await _certificateClient.ImportCertificateAsync(options)).Value;
+}
+
+/// &lt;summary&gt;从 PFX 文件导入证书&lt;/summary&gt;
+public async Task&lt;KeyVaultCertificateWithPolicy&gt;
+    ImportCertificateFromFileAsync(string name, string pfxFilePath,
+        string password = null, Dictionary&lt;string, string&gt; tags = null)
+{
+    var bytes = await System.IO.File.ReadAllBytesAsync(pfxFilePath);
+    return await ImportCertificateAsync(name, bytes, password, tags);
+}</code></pre>
+
+<h3>4.4.2 读取 Certificate</h3>
+<pre><code>/// &lt;summary&gt;获取证书（含公钥，不含私钥）&lt;/summary&gt;
+public async Task&lt;KeyVaultCertificate&gt; GetCertificateAsync(string name)
+    => (await _certificateClient.GetCertificateAsync(name)).Value;
+
+/// &lt;summary&gt;获取证书 CER 格式（仅公钥）&lt;/summary&gt;
+public async Task&lt;byte[]&gt; GetCertificateCerAsync(string name)
+    => (await GetCertificateAsync(name)).Cer;
+
+/// &lt;summary&gt;列出所有证书&lt;/summary&gt;
+public async Task&lt;List&lt;CertificatePropertiesInfo&gt;&gt; ListCertificatesAsync()
+{
+    var result = new List&lt;CertificatePropertiesInfo&gt;();
+    await foreach (var prop in _certificateClient.GetPropertiesOfCertificatesAsync())
+    {
+        result.Add(new CertificatePropertiesInfo
+        {
+            Name = prop.Name, Subject = prop.Subject,
+            Thumbprint = BitConverter.ToString(prop.X509Thumbprint).Replace("-","").ToUpper(),
+            ExpiresOn = prop.ExpiresOn, Enabled = prop.Enabled
+        });
+    }
+    return result;
+}</code></pre>
+
+<h3>4.4.3 删除 Certificate</h3>
+<pre><code>public async Task DeleteCertificateAsync(string name)
+{
+    var op = await _certificateClient.StartDeleteCertificateAsync(name);
+    await op.WaitForCompletionAsync();
+}
+public async Task RecoverCertificateAsync(string name)
+{
+    var op = await _certificateClient.StartRecoverDeletedCertificateAsync(name);
+    await op.WaitForCompletionAsync();
+}
+public async Task PurgeCertificateAsync(string name)
+    => await _certificateClient.PurgeDeletedCertificateAsync(name);</code></pre>
+
+<h2 id="s4-5">4.5 备份与恢复</h2>
+<pre><code>// 备份
+public async Task&lt;byte[]&gt; BackupSecretAsync(string name)
+    => (await _secretClient.BackupSecretAsync(name)).Value;
+
+public async Task RestoreSecretAsync(byte[] backup)
+    => await _secretClient.RestoreSecretBackupAsync(backup);
+
+public async Task&lt;byte[]&gt; BackupKeyAsync(string name)
+    => (await _keyClient.BackupKeyAsync(name)).Value;
+
+public async Task RestoreKeyAsync(byte[] backup)
+    => await _keyClient.RestoreKeyBackupAsync(backup);
+
+public async Task&lt;byte[]&gt; BackupCertificateAsync(string name)
+    => (await _certificateClient.BackupCertificateAsync(name)).Value;
+
+public async Task RestoreCertificateAsync(byte[] backup)
+    => await _certificateClient.RestoreCertificateBackupAsync(backup);
+
+/// &lt;summary&gt;一键备份所有对象到指定目录&lt;/summary&gt;
+public async Task&lt;BackupSummary&gt; BackupAllAsync(string outputDirectory)
+{
+    if (!Directory.Exists(outputDirectory)) Directory.CreateDirectory(outputDirectory);
+    var summary = new BackupSummary();
+    // Secrets
+    await foreach (var prop in _secretClient.GetPropertiesOfSecretsAsync())
+    {
+        try { var bak = await BackupSecretAsync(prop.Name);
+            await File.WriteAllBytesAsync(Path.Combine(outputDirectory, $"secret_{prop.Name}.bak"), bak);
+            summary.SecretsBackedUp++; }
+        catch { summary.SecretsFailed++; }
+    }
+    // Keys
+    await foreach (var prop in _keyClient.GetPropertiesOfKeysAsync())
+    {
+        try { var bak = await BackupKeyAsync(prop.Name);
+            await File.WriteAllBytesAsync(Path.Combine(outputDirectory, $"key_{prop.Name}.bak"), bak);
+            summary.KeysBackedUp++; }
+        catch { summary.KeysFailed++; }
+    }
+    // Certificates
+    await foreach (var prop in _certificateClient.GetPropertiesOfCertificatesAsync())
+    {
+        try { var bak = await BackupCertificateAsync(prop.Name);
+            await File.WriteAllBytesAsync(Path.Combine(outputDirectory, $"cert_{prop.Name}.bak"), bak);
+            summary.CertificatesBackedUp++; }
+        catch { summary.CertificatesFailed++; }
+    }
+    return summary;
+}</code></pre>
+
+<!-- Section 5 -->
+<h1 id="s5">5. Controller 层调用示例</h1>
+
+<h2>5.1 Secret 操作</h2>
+<pre><code>[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task&lt;ActionResult&gt; SetSecret(string name, string value)
+{
+    var secret = await _kv.SetSecretAsync(name, value,
+        contentType: "text/plain",
+        tags: new Dictionary&lt;string, string&gt;
+        {
+            { "Environment", "Production" },
+            { "UpdatedBy", User.Identity.Name }
+        });
+    return Json(new { success = true,
+        version = secret.Properties.Version,
+        message = $"Secret '{name}' 已设置" });
+}
+
+public async Task&lt;ActionResult&gt; ListSecrets()
+{
+    var secrets = await _kv.ListSecretsAsync();
+    return View(secrets);
+}</code></pre>
+
+<h2>5.2 Key 加密/解密</h2>
+<pre><code>[HttpPost]
+public async Task&lt;ActionResult&gt; EncryptData(string keyName, string plainText)
+{
+    var data = System.Text.Encoding.UTF8.GetBytes(plainText);
+    var encrypted = await _kv.EncryptAsync(keyName, data);
+    return Json(new { success = true,
+        ciphertext = Convert.ToBase64String(encrypted) });
+}
+
+[HttpPost]
+public async Task&lt;ActionResult&gt; DecryptData(string keyName, string cipherBase64)
+{
+    var cipher = Convert.FromBase64String(cipherBase64);
+    var decrypted = await _kv.DecryptAsync(keyName, cipher);
+    return Json(new { success = true,
+        plainText = System.Text.Encoding.UTF8.GetString(decrypted) });
+}</code></pre>
+
+<h2>5.3 Certificate 导入</h2>
+<pre><code>[HttpPost]
+public async Task&lt;ActionResult&gt; ImportCertificate(
+    string name, HttpPostedFileBase pfxFile, string password)
+{
+    using (var ms = new MemoryStream())
+    {
+        pfxFile.InputStream.CopyTo(ms);
+        var cert = await _kv.ImportCertificateAsync(name, ms.ToArray(), password);
+        return Json(new { success = true,
+            subject = cert.Properties.Subject });
+    }
+}</code></pre>
+
+<!-- Section 6 -->
+<h1 id="s6">6. Web.config 配置</h1>
+<pre><code>&lt;configuration&gt;
+  &lt;appSettings&gt;
+    &lt;add key="KeyVault:VaultUrl"
+         value="https://my-key-vault-001.vault.azure.net/" /&gt;
+    &lt;add key="KeyVault:TenantId"
+         value="your-tenant-id" /&gt;
+  &lt;/appSettings&gt;
+&lt;/configuration&gt;</code></pre>
+
+<!-- Section 7 -->
+<h1 id="s7">7. RBAC 权限配置速查</h1>
+<table>
+  <tr><th>角色</th><th>Secret</th><th>Key</th><th>Certificate</th><th>适用对象</th></tr>
+  <tr><td><strong>Key Vault Secrets User</strong></td><td>读取</td><td>-</td><td>-</td><td>Web App（生产）</td></tr>
+  <tr><td><strong>Key Vault Secrets Officer</strong></td><td>读写删</td><td>-</td><td>-</td><td>运维/DevOps</td></tr>
+  <tr><td><strong>Key Vault Crypto User</strong></td><td>-</td><td>加密/解密/签名</td><td>-</td><td>需要加解密的应用</td></tr>
+  <tr><td><strong>Key Vault Crypto Officer</strong></td><td>-</td><td>完整管理</td><td>-</td><td>密钥管理员</td></tr>
+  <tr><td><strong>Key Vault Certificates Officer</strong></td><td>-</td><td>-</td><td>完整管理</td><td>证书管理员</td></tr>
+  <tr><td>Key Vault Administrator</td><td>全部</td><td>全部</td><td>全部</td><td>紧急修复（慎用）</td></tr>
+</table>
+
+<h2>CLI 快速分配权限</h2>
+<pre><code># 为 App Service 分配 Secret 读取权限
+APP_ID=$(az webapp identity show --resource-group myRG --name my-app --query principalId -o tsv)
+az role assignment create --assignee $APP_ID \
+    --role "Key Vault Secrets User" \
+    --scope /subscriptions/&lt;sub&gt;/resourceGroups/&lt;rg&gt;/providers/Microsoft.KeyVault/vaults/my-key-vault-001</code></pre>
+
+<!-- Section 8 -->
+<h1 id="s8">8. 最佳实践与注意事项</h1>
+<h2>应该做的</h2>
+<ul>
+  <li>使用 <strong>Managed Identity</strong> — 零密钥管理</li>
+  <li>使用 <strong>RBAC 权限模型</strong> — 不要用旧的 Vault Access Policy</li>
+  <li>启用 <strong>soft-delete + purge-protection</strong></li>
+  <li>实现配置降级 — Key Vault 不可用时降级到 Web.config</li>
+  <li>Secret 设置过期时间、使用 Tag 标记</li>
+  <li>配置网络白名单，定期备份</li>
+</ul>
+<h2>不应该做的</h2>
+<ul>
+  <li>禁止硬编码 AK/SK 或 Client Secret</li>
+  <li>禁止为生产分配 <code class="inline">Key Vault Administrator</code></li>
+  <li>禁止关闭 soft-delete</li>
+  <li>禁止将 Secret 值输出到日志</li>
+</ul>
+
+<h2>Secret 命名规范</h2>
+<div class="diagram">推荐格式: {Prefix}-{Type}-{Name}
+
+示例:
+  Prod-ConnStr-DefaultConnection
+  Prod-AppSetting-EmailSmtpServer
+  Prod-ApiKey-Stripe
+  Prod-Secret-JwtSigningKey</div>
+
+<!-- Section 9 -->
+<h1 id="s9">9. 常见错误排查</h1>
+<table>
+  <tr><th>错误码</th><th>含义</th><th>常见原因</th><th>解决方案</th></tr>
+  <tr><td>401</td><td>未认证</td><td>未登录 / Managed Identity 未启用</td><td>执行 <code class="inline">az login</code>；启用 Managed Identity</td></tr>
+  <tr><td>403</td><td>权限不足</td><td>RBAC 角色未分配</td><td>检查角色分配和作用域</td></tr>
+  <tr><td>404</td><td>不存在</td><td>名称拼写错误</td><td>检查名称，查看已删除列表</td></tr>
+  <tr><td>429</td><td>限流</td><td>请求频率过高</td><td>添加重试逻辑</td></tr>
+  <tr><td>503</td><td>服务不可用</td><td>Key Vault 维护中</td><td>等待后重试</td></tr>
+</table>
+
+<h2>排查清单</h2>
+<pre><code>// 1. 检查认证
+az login
+
+// 2. 检查 RBAC
+az role assignment list --assignee &lt;principal-id&gt; --scope &lt;kv-scope&gt;
+
+// 3. 检查网络规则
+az keyvault show --name my-key-vault-001 --query properties.networkAcls
+
+// 4. 代码中捕获详细错误
+catch (RequestFailedException ex)
+{
+    var statusCode = ex.Status;     // HTTP 状态码
+    var errorCode = ex.ErrorCode;   // Key Vault 错误码
+    var message = ex.Message;       // 详细信息
+}</code></pre>
+
+<div class="footer">
+  <p>文档结束 — Azure KeyVault 操作手册 v1.0 | ASP.NET Framework 4.7.2+</p>
+</div>
+
+</div>
+</body>
+</html>
