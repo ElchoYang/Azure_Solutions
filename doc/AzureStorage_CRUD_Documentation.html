@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASP.NET MVC — Azure Storage CRUD 开发文档</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #c9d1d9; --text-muted: #8b949e; --text-bright: #f0f6fc;
+    --primary: #58a6ff; --accent: #2e75b6; --green: #3fb950;
+    --orange: #d29922; --red: #f85149; --purple: #bc8cff;
+    --code-bg: #1c2333; --code-border: #2d333b;
+    --table-header: #1a2332; --table-stripe: #131a24;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.7; font-size: 15px;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 30px; }
+
+  /* Cover */
+  .cover {
+    text-align: center; padding: 80px 0 60px;
+    border-bottom: 1px solid var(--border); margin-bottom: 50px;
+  }
+  .cover h1 { color: var(--primary); font-size: 42px; margin-bottom: 10px; }
+  .cover h2 { color: var(--text-bright); font-size: 28px; font-weight: 400; margin-bottom: 10px; }
+  .cover .subtitle { color: var(--text-muted); font-size: 20px; }
+  .cover .meta { color: var(--text-muted); margin-top: 20px; font-size: 13px; }
+
+  /* TOC */
+  .toc {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 24px 32px; margin-bottom: 50px;
+  }
+  .toc h3 { color: var(--primary); margin-bottom: 16px; font-size: 18px; }
+  .toc ul { list-style: none; padding: 0; }
+  .toc li { padding: 4px 0; }
+  .toc li a { color: var(--text); text-decoration: none; transition: color .2s; }
+  .toc li a:hover { color: var(--primary); }
+  .toc li.l2 { padding-left: 24px; font-size: 14px; color: var(--text-muted); }
+
+  /* Headings */
+  h1 { color: var(--text-bright); font-size: 28px; margin: 50px 0 20px;
+       padding-bottom: 10px; border-bottom: 2px solid var(--accent); }
+  h2 { color: var(--primary); font-size: 22px; margin: 36px 0 16px; }
+  h3 { color: var(--text-bright); font-size: 17px; margin: 24px 0 12px; }
+
+  p { margin-bottom: 14px; }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--code-border);
+    border-radius: 8px; padding: 20px 24px; margin: 16px 0 20px;
+    overflow-x: auto; font-size: 13px; line-height: 1.6;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  }
+  code { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
+  p code, li code {
+    background: var(--code-bg); border: 1px solid var(--code-border);
+    padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--green);
+  }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse; margin: 20px 0;
+    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  }
+  thead th {
+    background: var(--table-header); color: var(--primary);
+    font-weight: 600; text-align: left; padding: 12px 16px;
+    border-bottom: 2px solid var(--accent); font-size: 14px;
+  }
+  tbody td {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    font-size: 14px; vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  tbody tr:hover { background: rgba(88, 166, 255, 0.05); }
+
+  /* Note / Warning */
+  .note {
+    background: rgba(88, 166, 255, 0.08); border-left: 4px solid var(--primary);
+    padding: 14px 20px; margin: 16px 0; border-radius: 0 6px 6px 0;
+    font-size: 14px;
+  }
+  .note strong { color: var(--primary); }
+  .warning {
+    background: rgba(210, 153, 34, 0.08); border-left: 4px solid var(--orange);
+    padding: 14px 20px; margin: 16px 0; border-radius: 0 6px 6px 0;
+    font-size: 14px;
+  }
+  .warning strong { color: var(--orange); }
+
+  /* Tags */
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: 600; margin-right: 6px;
+  }
+  .tag-blue { background: rgba(88,166,255,0.15); color: var(--primary); }
+  .tag-green { background: rgba(63,185,80,0.15); color: var(--green); }
+  .tag-orange { background: rgba(210,153,34,0.15); color: var(--orange); }
+
+  /* Footer */
+  .footer {
+    text-align: center; color: var(--text-muted); font-size: 12px;
+    padding: 40px 0 20px; border-top: 1px solid var(--border); margin-top: 60px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { padding: 20px 16px; }
+    .cover h1 { font-size: 28px; }
+    .cover h2 { font-size: 20px; }
+    h1 { font-size: 22px; }
+    pre { padding: 14px 16px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- Cover -->
+<div class="cover">
+  <h1>ASP.NET MVC Framework</h1>
+  <h2>Azure File Storage & Blob Storage</h2>
+  <div class="subtitle">CRUD 开发文档</div>
+  <div class="meta">
+    版本 v1.0 &nbsp;|&nbsp; 2026-05-28 &nbsp;|&nbsp; SDK: WindowsAzure.Storage 9.3.3
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h3>目录</h3>
+  <ul>
+    <li><a href="#s1">1. 概述与依赖配置</a></li>
+    <li><a href="#s2">2. AzureFileService — Azure File Storage 操作服务</a></li>
+    <li class="l2"><a href="#s2-1">2.1 服务类定义与初始化</a></li>
+    <li class="l2"><a href="#s2-2">2.2 创建文件共享</a></li>
+    <li class="l2"><a href="#s2-3">2.3 创建目录</a></li>
+    <li class="l2"><a href="#s2-4">2.4 上传文件</a></li>
+    <li class="l2"><a href="#s2-5">2.5 下载文件</a></li>
+    <li class="l2"><a href="#s2-6">2.6 列出文件与目录</a></li>
+    <li class="l2"><a href="#s2-7">2.7 删除文件</a></li>
+    <li class="l2"><a href="#s2-8">2.8 删除目录</a></li>
+    <li class="l2"><a href="#s2-9">2.9 复制文件</a></li>
+    <li class="l2"><a href="#s2-10">2.10 检查文件是否存在</a></li>
+    <li class="l2"><a href="#s2-11">2.11 获取文件属性</a></li>
+    <li class="l2"><a href="#s2-12">2.12 批量下载为 ZIP</a></li>
+    <li><a href="#s3">3. BlobStorageService — Azure Blob Storage 操作服务</a></li>
+    <li class="l2"><a href="#s3-1">3.1 服务类定义与初始化</a></li>
+    <li class="l2"><a href="#s3-2">3.2 创建容器</a></li>
+    <li class="l2"><a href="#s3-3">3.3 创建虚拟文件夹</a></li>
+    <li class="l2"><a href="#s3-4">3.4 上传 Blob</a></li>
+    <li class="l2"><a href="#s3-5">3.5 下载 Blob</a></li>
+    <li class="l2"><a href="#s3-6">3.6 列出 Blob</a></li>
+    <li class="l2"><a href="#s3-7">3.7 删除 Blob</a></li>
+    <li class="l2"><a href="#s3-8">3.8 删除容器</a></li>
+    <li class="l2"><a href="#s3-9">3.9 复制 Blob</a></li>
+    <li class="l2"><a href="#s3-10">3.10 检查 Blob 是否存在</a></li>
+    <li class="l2"><a href="#s3-11">3.11 获取 Blob 属性</a></li>
+    <li class="l2"><a href="#s3-12">3.12 批量下载为 ZIP</a></li>
+    <li><a href="#s4">4. Controller 层调用示例</a></li>
+    <li><a href="#s5">5. Web.config 配置</a></li>
+    <li><a href="#s6">6. NuGet 包引用</a></li>
+    <li><a href="#s7">7. 常见问题与注意事项</a></li>
+  </ul>
+</div>
+
+<!-- Section 1 -->
+<h1 id="s1">1. 概述与依赖配置</h1>
+
+<p>本文档提供两个独立的服务类，分别封装 Azure File Storage 和 Azure Blob Storage 的完整 CRUD 操作，适用于 ASP.NET MVC Framework 项目。</p>
+
+<table>
+  <thead>
+    <tr><th>服务类</th><th>职责</th><th>存储类型</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>AzureFileService</code></td>
+      <td>Azure 文件共享操作（SMB 协议，支持目录/文件层级）</td>
+      <td>Azure File Storage</td>
+    </tr>
+    <tr>
+      <td><code>BlobStorageService</code></td>
+      <td>Azure Blob 存储（支持容器/虚拟文件夹/Blob）</td>
+      <td>Azure Blob Storage</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>两个服务均包含 <strong>批量打包 ZIP 下载</strong> 功能，将多个文件打包后放到本地临时路径供用户下载。</p>
+
+<div class="note">
+  <strong>核心依赖：</strong> <code>WindowsAzure.Storage</code> (>= 9.3.3)、<code>System.IO.Compression.FileSystem</code>
+</div>
+
+<!-- Section 2 -->
+<h1 id="s2">2. AzureFileService — Azure File Storage 操作服务</h1>
+
+<h2 id="s2-1">2.1 服务类定义与初始化</h2>
+<p>AzureFileService 封装了与 Azure File Storage 的所有交互，通过连接字符串初始化 <code>CloudFileClient</code>。</p>
+
+<pre><code>using Microsoft.Azure.Storage;
+using Microsoft.Azure.Storage.File;
+using System.IO;
+using System.IO.Compression;
+using System.Threading.Tasks;
+using System.Web;
+
+public class AzureFileService
+{
+    private readonly CloudFileClient _fileClient;
+    private readonly string _defaultShareName;
+
+    /// &lt;summary&gt;
+    /// 初始化 AzureFileService
+    /// &lt;/summary&gt;
+    public AzureFileService(string connectionString,
+        string defaultShareName = "my-file-share")
+    {
+        if (string.IsNullOrEmpty(connectionString))
+            throw new ArgumentNullException(nameof(connectionString));
+
+        CloudStorageAccount storageAccount =
+            CloudStorageAccount.Parse(connectionString);
+        _fileClient = storageAccount.CreateCloudFileClient();
+        _defaultShareName = defaultShareName;
+    }
+
+    private CloudFileShare GetShareReference(string shareName = null)
+    {
+        return _fileClient.GetShareReference(shareName ?? _defaultShareName);
+    }
+
+    private CloudFileDirectory GetRootDirectory(string shareName = null)
+    {
+        return GetShareReference(shareName).GetRootDirectoryReference();
+    }
+}</code></pre>
+
+<h2 id="s2-2">2.2 创建文件共享 (Create Share)</h2>
+<pre><code>public async Task&lt;bool&gt; CreateShareAsync(
+    string shareName = null, int quotaInGB = 5120)
+{
+    var share = GetShareReference(shareName);
+    bool created = await share.CreateIfNotExistsAsync();
+    if (created)
+    {
+        share.Properties.Quota = quotaInGB;
+        await share.SetPropertiesAsync();
+    }
+    return created;
+}</code></pre>
+
+<h2 id="s2-3">2.3 创建目录 (Create Directory)</h2>
+<p>支持多级路径创建，如 <code>"projects/2026/reports"</code>。</p>
+
+<pre><code>public async Task&lt;bool&gt; CreateDirectoryAsync(
+    string directoryPath, string shareName = null)
+{
+    if (string.IsNullOrEmpty(directoryPath))
+        throw new ArgumentNullException(nameof(directoryPath));
+
+    var rootDir = GetRootDirectory(shareName);
+    var segments = directoryPath.Split(
+        new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+    CloudFileDirectory currentDir = rootDir;
+    bool created = false;
+
+    foreach (var segment in segments)
+    {
+        currentDir = currentDir.GetDirectoryReference(segment);
+        created = await currentDir.CreateIfNotExistsAsync() || created;
+    }
+    return created;
+}</code></pre>
+
+<h2 id="s2-4">2.4 上传文件 (Upload File)</h2>
+<p>支持两种上传方式：从本地文件路径上传、从 Stream 上传。</p>
+
+<pre><code>// 从本地文件上传
+public async Task UploadFileAsync(
+    string localFilePath,
+    string targetDirectoryPath = null,
+    string shareName = null)
+{
+    if (!File.Exists(localFilePath))
+        throw new FileNotFoundException($"本地文件不存在: {localFilePath}");
+
+    CloudFileDirectory targetDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(targetDirectoryPath))
+    {
+        foreach (var seg in targetDirectoryPath.Split('/'))
+            targetDir = targetDir.GetDirectoryReference(seg);
+    }
+
+    CloudFile cloudFile = targetDir.GetFileReference(
+        Path.GetFileName(localFilePath));
+    await cloudFile.UploadFromFileAsync(localFilePath);
+}
+
+// 从 Stream 上传
+public async Task UploadFromStreamAsync(
+    Stream stream, string fileName,
+    string targetDirectoryPath = null, string shareName = null)
+{
+    if (stream == null) throw new ArgumentNullException(nameof(stream));
+    if (string.IsNullOrEmpty(fileName)) throw new ArgumentNullException(nameof(fileName));
+
+    CloudFileDirectory targetDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(targetDirectoryPath))
+    {
+        foreach (var seg in targetDirectoryPath.Split('/'))
+            targetDir = targetDir.GetDirectoryReference(seg);
+    }
+
+    CloudFile cloudFile = targetDir.GetFileReference(fileName);
+    await cloudFile.UploadFromStreamAsync(stream);
+}</code></pre>
+
+<h2 id="s2-5">2.5 下载文件 (Download File)</h2>
+<pre><code>// 下载到本地文件
+public async Task DownloadFileAsync(
+    string fileName, string localFilePath,
+    string directoryPath = null, string shareName = null)
+{
+    var localDir = Path.GetDirectoryName(localFilePath);
+    if (!string.IsNullOrEmpty(localDir) &amp;&amp; !Directory.Exists(localDir))
+        Directory.CreateDirectory(localDir);
+
+    CloudFileDirectory targetDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(directoryPath))
+    {
+        foreach (var seg in directoryPath.Split('/'))
+            targetDir = targetDir.GetDirectoryReference(seg);
+    }
+
+    CloudFile cloudFile = targetDir.GetFileReference(fileName);
+    await cloudFile.DownloadToFileAsync(localFilePath, FileMode.Create);
+}
+
+// 下载到 Stream
+public async Task DownloadToStreamAsync(
+    string fileName, Stream targetStream,
+    string directoryPath = null, string shareName = null)
+{
+    CloudFileDirectory targetDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(directoryPath))
+    {
+        foreach (var seg in directoryPath.Split('/'))
+            targetDir = targetDir.GetDirectoryReference(seg);
+    }
+
+    CloudFile cloudFile = targetDir.GetFileReference(fileName);
+    await cloudFile.DownloadToStreamAsync(targetStream);
+}</code></pre>
+
+<h2 id="s2-6">2.6 列出文件与目录 (List Files &amp; Directories)</h2>
+<p>使用分页列出指定目录下的所有文件和子目录，返回 <code>FileListResult</code> 模型。</p>
+
+<pre><code>public class FileListResult
+{
+    public List&lt;FileItem&gt; Files { get; set; } = new List&lt;FileItem&gt;();
+    public List&lt;FileItem&gt; Directories { get; set; } = new List&lt;FileItem&gt;();
+}
+
+public class FileItem
+{
+    public string Name { get; set; }
+    public string Type { get; set; }   // "File" or "Directory"
+    public long Size { get; set; }
+    public DateTime LastModified { get; set; }
+}
+
+public async Task&lt;FileListResult&gt; ListFilesAndDirectoriesAsync(
+    string directoryPath = null, string shareName = null)
+{
+    CloudFileDirectory targetDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(directoryPath))
+    {
+        foreach (var seg in directoryPath.Split('/'))
+            targetDir = targetDir.GetDirectoryReference(seg);
+    }
+
+    var result = new FileListResult();
+    FileContinuationToken token = null;
+    do
+    {
+        var segment = await targetDir
+            .ListFilesAndDirectoriesSegmentedAsync(token);
+        token = segment.ContinuationToken;
+
+        foreach (IListFileItem item in segment.Results)
+        {
+            if (item is CloudFile file)
+            {
+                await file.FetchAttributesAsync();
+                result.Files.Add(new FileItem
+                {
+                    Name = file.Name,
+                    Size = file.Properties.Length,
+                    LastModified = file.Properties.LastModified
+                        ?.DateTime ?? DateTime.MinValue,
+                    Type = "File"
+                });
+            }
+            else if (item is CloudFileDirectory dir)
+            {
+                result.Directories.Add(new FileItem
+                {
+                    Name = dir.Name, Type = "Directory"
+                });
+            }
+        }
+    } while (token != null);
+    return result;
+}</code></pre>
+
+<h2 id="s2-7">2.7 删除文件 (Delete File)</h2>
+<pre><code>public async Task&lt;bool&gt; DeleteFileAsync(
+    string fileName, string directoryPath = null, string shareName = null)
+{
+    if (string.IsNullOrEmpty(fileName)) throw new ArgumentNullException(nameof(fileName));
+
+    CloudFileDirectory targetDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(directoryPath))
+    {
+        foreach (var seg in directoryPath.Split('/'))
+            targetDir = targetDir.GetDirectoryReference(seg);
+    }
+
+    CloudFile cloudFile = targetDir.GetFileReference(fileName);
+    return await cloudFile.DeleteIfExistsAsync();
+}</code></pre>
+
+<h2 id="s2-8">2.8 删除目录 (Delete Directory)</h2>
+<p>递归删除目录下所有文件和子目录，再删除目录本身。</p>
+
+<pre><code>public async Task&lt;bool&gt; DeleteDirectoryAsync(
+    string directoryPath, string shareName = null)
+{
+    if (string.IsNullOrEmpty(directoryPath))
+        throw new ArgumentNullException(nameof(directoryPath));
+
+    var rootDir = GetRootDirectory(shareName);
+    var segments = directoryPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    CloudFileDirectory targetDir = rootDir;
+    foreach (var segment in segments)
+        targetDir = targetDir.GetDirectoryReference(segment);
+
+    // 递归删除子内容
+    var items = await ListFilesAndDirectoriesAsync(directoryPath, shareName);
+    foreach (var file in items.Files)
+        await DeleteFileAsync(file.Name, directoryPath, shareName);
+    foreach (var dir in items.Directories)
+    {
+        string subPath = directoryPath.TrimEnd('/') + "/" + dir.Name;
+        await DeleteDirectoryAsync(subPath, shareName);
+    }
+
+    return await targetDir.DeleteIfExistsAsync();
+}</code></pre>
+
+<h2 id="s2-9">2.9 复制文件 (Copy File)</h2>
+<pre><code>public async Task CopyFileAsync(
+    string sourceFileName, string sourceDirectoryPath,
+    string destFileName, string destDirectoryPath,
+    string shareName = null)
+{
+    // 获取源文件引用
+    CloudFileDirectory sourceDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(sourceDirectoryPath))
+        foreach (var seg in sourceDirectoryPath.Split('/'))
+            sourceDir = sourceDir.GetDirectoryReference(seg);
+    var sourceFile = sourceDir.GetFileReference(sourceFileName);
+    await sourceFile.FetchAttributesAsync();
+
+    // 确保目标目录存在
+    if (!string.IsNullOrEmpty(destDirectoryPath))
+        await CreateDirectoryAsync(destDirectoryPath, shareName);
+
+    // 执行复制
+    CloudFileDirectory destDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(destDirectoryPath))
+        foreach (var seg in destDirectoryPath.Split('/'))
+            destDir = destDir.GetDirectoryReference(seg);
+    var destFile = destDir.GetFileReference(destFileName);
+
+    string sourceUri = sourceFile.SnapshotQualifiedUri.AbsoluteUri;
+    await destFile.StartCopyAsync(new Uri(sourceUri));
+}</code></pre>
+
+<h2 id="s2-10">2.10 检查文件是否存在 (File Exists)</h2>
+<pre><code>public async Task&lt;bool&gt; FileExistsAsync(
+    string fileName, string directoryPath = null, string shareName = null)
+{
+    CloudFileDirectory targetDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(directoryPath))
+        foreach (var seg in directoryPath.Split('/'))
+            targetDir = targetDir.GetDirectoryReference(seg);
+
+    CloudFile cloudFile = targetDir.GetFileReference(fileName);
+    return await cloudFile.ExistsAsync();
+}</code></pre>
+
+<h2 id="s2-11">2.11 获取文件属性 (Get File Properties)</h2>
+<pre><code>public class FileProperties
+{
+    public string Name { get; set; }
+    public long Length { get; set; }
+    public string ContentType { get; set; }
+    public DateTime LastModified { get; set; }
+    public string ETag { get; set; }
+    public IDictionary&lt;string, string&gt; Metadata { get; set; }
+}
+
+public async Task&lt;FileProperties&gt; GetFilePropertiesAsync(
+    string fileName, string directoryPath = null, string shareName = null)
+{
+    CloudFileDirectory targetDir = GetRootDirectory(shareName);
+    if (!string.IsNullOrEmpty(directoryPath))
+        foreach (var seg in directoryPath.Split('/'))
+            targetDir = targetDir.GetDirectoryReference(seg);
+
+    CloudFile cloudFile = targetDir.GetFileReference(fileName);
+    await cloudFile.FetchAttributesAsync();
+
+    return new FileProperties
+    {
+        Name = cloudFile.Name,
+        Length = cloudFile.Properties.Length,
+        ContentType = cloudFile.Properties.ContentType,
+        LastModified = cloudFile.Properties.LastModified?.DateTime ?? DateTime.MinValue,
+        ETag = cloudFile.Properties.ETag,
+        Metadata = cloudFile.Metadata
+    };
+}</code></pre>
+
+<h2 id="s2-12">2.12 批量下载为 ZIP (Batch Download as ZIP)</h2>
+<p>两种方式：保存到本地路径、直接返回 MemoryStream 供 Controller 下载。</p>
+
+<pre><code>/// &lt;summary&gt;
+/// 将指定目录下的多个文件打包为 ZIP 并保存到本地路径
+/// &lt;/summary&gt;
+public async Task DownloadAsZipAsync(
+    string directoryPath,
+    List&lt;string&gt; fileNames = null,
+    string localZipPath = null,
+    string shareName = null)
+{
+    // 默认 ZIP 路径
+    if (string.IsNullOrEmpty(localZipPath))
+    {
+        string zipDir = HttpContext.Current.Server.MapPath("~/App_Data/Downloads");
+        if (!Directory.Exists(zipDir)) Directory.CreateDirectory(zipDir);
+
+        string dirSafeName = string.IsNullOrEmpty(directoryPath)
+            ? "root" : directoryPath.Replace("/", "_").Replace("\\", "_");
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        localZipPath = Path.Combine(zipDir, $"{dirSafeName}_{timestamp}.zip");
+    }
+
+    var allItems = await ListFilesAndDirectoriesAsync(directoryPath, shareName);
+    IEnumerable&lt;FileItem&gt; filesToDownload = allItems.Files;
+
+    if (fileNames != null &amp;&amp; fileNames.Any())
+    {
+        filesToDownload = filesToDownload.Where(f =&gt;
+            fileNames.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
+    }
+
+    if (!filesToDownload.Any())
+        throw new InvalidOperationException("没有找到可下载的文件。");
+
+    // 创建 ZIP 文件
+    using (var zipStream = new FileStream(localZipPath, FileMode.Create))
+    using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create))
+    {
+        foreach (var fileItem in filesToDownload)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                await DownloadToStreamAsync(fileItem.Name, memoryStream,
+                    directoryPath, shareName);
+                memoryStream.Position = 0;
+
+                var zipEntry = archive.CreateEntry(
+                    fileItem.Name, CompressionLevel.Optimal);
+                using (var entryStream = zipEntry.Open())
+                {
+                    await memoryStream.CopyToAsync(entryStream);
+                }
+            }
+        }
+    }
+}
+
+/// &lt;summary&gt;
+/// 批量下载为 ZIP 并返回内存流（用于 Controller 直接返回给浏览器）
+/// &lt;/summary&gt;
+public async Task&lt;Stream&gt; DownloadAsZipStreamAsync(
+    string directoryPath,
+    List&lt;string&gt; fileNames = null,
+    string zipFileName = null,
+    string shareName = null)
+{
+    var allItems = await ListFilesAndDirectoriesAsync(directoryPath, shareName);
+    IEnumerable&lt;FileItem&gt; filesToDownload = allItems.Files;
+
+    if (fileNames != null &amp;&amp; fileNames.Any())
+    {
+        filesToDownload = filesToDownload.Where(f =&gt;
+            fileNames.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
+    }
+
+    var memoryStream = new MemoryStream();
+    using (var archive = new ZipArchive(
+        memoryStream, ZipArchiveMode.Create, leaveOpen: true))
+    {
+        foreach (var fileItem in filesToDownload)
+        {
+            using (var fileMemoryStream = new MemoryStream())
+            {
+                await DownloadToStreamAsync(fileItem.Name, fileMemoryStream,
+                    directoryPath, shareName);
+                fileMemoryStream.Position = 0;
+
+                var zipEntry = archive.CreateEntry(
+                    fileItem.Name, CompressionLevel.Optimal);
+                using (var entryStream = zipEntry.Open())
+                {
+                    await fileMemoryStream.CopyToAsync(entryStream);
+                }
+            }
+        }
+    }
+
+    memoryStream.Position = 0;
+    return memoryStream;
+}</code></pre>
+
+<div class="note">
+  <strong>推荐使用 <code>DownloadAsZipStreamAsync</code>：</strong>直接返回 MemoryStream 给 Controller 的 <code>File()</code> 方法，避免文件落盘，更安全且无需清理。
+</div>
+
+<!-- Section 3 -->
+<h1 id="s3">3. BlobStorageService — Azure Blob Storage 操作服务</h1>
+
+<h2 id="s3-1">3.1 服务类定义与初始化</h2>
+<pre><code>using Microsoft.Azure.Storage;
+using Microsoft.Azure.Storage.Blob;
+using System.IO;
+using System.IO.Compression;
+using System.Threading.Tasks;
+
+public class BlobStorageService
+{
+    private readonly CloudBlobClient _blobClient;
+    private readonly string _defaultContainerName;
+
+    public BlobStorageService(string connectionString,
+        string defaultContainerName = "my-blob-container")
+    {
+        if (string.IsNullOrEmpty(connectionString))
+            throw new ArgumentNullException(nameof(connectionString));
+
+        CloudStorageAccount storageAccount =
+            CloudStorageAccount.Parse(connectionString);
+        _blobClient = storageAccount.CreateCloudBlobClient();
+        _defaultContainerName = defaultContainerName;
+    }
+
+    private CloudBlobContainer GetContainerReference(string containerName = null)
+    {
+        return _blobClient.GetContainerReference(
+            containerName ?? _defaultContainerName);
+    }
+
+    private CloudBlockBlob GetBlobReference(
+        string blobName, string containerName = null, string prefix = null)
+    {
+        var container = GetContainerReference(containerName);
+        string fullBlobName = string.IsNullOrEmpty(prefix)
+            ? blobName
+            : prefix.TrimEnd('/') + "/" + blobName.TrimStart('/');
+        return container.GetBlockBlobReference(fullBlobName);
+    }
+}</code></pre>
+
+<h2 id="s3-2">3.2 创建容器 (Create Container)</h2>
+<pre><code>public async Task&lt;bool&gt; CreateContainerAsync(
+    string containerName = null,
+    BlobContainerPublicAccessType publicAccess =
+        BlobContainerPublicAccessType.Off)
+{
+    var container = GetContainerReference(containerName);
+    return await container.CreateIfNotExistsAsync(
+        publicAccess, new BlobRequestOptions(), new OperationContext());
+}</code></pre>
+
+<h2 id="s3-3">3.3 创建虚拟文件夹 (Create Virtual Folder)</h2>
+<div class="note">
+  <strong>注意：</strong>Azure Blob Storage 没有真正的"文件夹"概念。文件夹是通过在 Blob 名称中使用 <code>/</code> 分隔符模拟的。创建"文件夹"实际上是在指定路径下上传一个占位 Blob（长度为 0 的 Blob，名称以 <code>/</code> 结尾）。
+</div>
+
+<pre><code>public async Task CreateVirtualFolderAsync(
+    string folderPath, string containerName = null)
+{
+    if (string.IsNullOrEmpty(folderPath))
+        throw new ArgumentNullException(nameof(folderPath));
+
+    var container = GetContainerReference(containerName);
+    string placeholderBlobName = folderPath.TrimEnd('/') + "/.folder";
+
+    CloudBlockBlob placeholderBlob =
+        container.GetBlockBlobReference(placeholderBlobName);
+    await placeholderBlob.UploadFromByteArrayAsync(new byte[0], 0, 0);
+}</code></pre>
+
+<h2 id="s3-4">3.4 上传 Blob (Upload Blob)</h2>
+<p>支持三种上传方式：本地文件、Stream、字节数组。</p>
+
+<pre><code>// 从本地文件上传
+public async Task UploadBlobAsync(
+    string localFilePath, string blobName,
+    string containerName = null, string contentType = null)
+{
+    if (!File.Exists(localFilePath))
+        throw new FileNotFoundException($"本地文件不存在: {localFilePath}");
+    if (string.IsNullOrEmpty(blobName))
+        throw new ArgumentNullException(nameof(blobName));
+
+    var blob = GetBlobReference(blobName, containerName);
+    if (!string.IsNullOrEmpty(contentType))
+        blob.Properties.ContentType = contentType;
+    await blob.UploadFromFileAsync(localFilePath);
+}
+
+// 从 Stream 上传
+public async Task UploadFromStreamAsync(
+    Stream stream, string blobName,
+    string containerName = null, string contentType = null)
+{
+    if (stream == null) throw new ArgumentNullException(nameof(stream));
+    if (string.IsNullOrEmpty(blobName)) throw new ArgumentNullException(nameof(blobName));
+
+    var blob = GetBlobReference(blobName, containerName);
+    if (!string.IsNullOrEmpty(contentType))
+        blob.Properties.ContentType = contentType;
+    await blob.UploadFromStreamAsync(stream);
+}
+
+// 从字节数组上传
+public async Task UploadFromByteArrayAsync(
+    byte[] data, string blobName,
+    string containerName = null, string contentType = null)
+{
+    if (data == null) throw new ArgumentNullException(nameof(data));
+    if (string.IsNullOrEmpty(blobName)) throw new ArgumentNullException(nameof(blobName));
+
+    var blob = GetBlobReference(blobName, containerName);
+    if (!string.IsNullOrEmpty(contentType))
+        blob.Properties.ContentType = contentType;
+    await blob.UploadFromByteArrayAsync(data, 0, data.Length);
+}</code></pre>
+
+<h2 id="s3-5">3.5 下载 Blob (Download Blob)</h2>
+<pre><code>// 下载到本地文件
+public async Task DownloadBlobAsync(
+    string blobName, string localFilePath, string containerName = null)
+{
+    var localDir = Path.GetDirectoryName(localFilePath);
+    if (!string.IsNullOrEmpty(localDir) &amp;&amp; !Directory.Exists(localDir))
+        Directory.CreateDirectory(localDir);
+
+    var blob = GetBlobReference(blobName, containerName);
+    await blob.DownloadToFileAsync(localFilePath, FileMode.Create);
+}
+
+// 下载到 Stream
+public async Task DownloadToStreamAsync(
+    string blobName, Stream targetStream, string containerName = null)
+{
+    var blob = GetBlobReference(blobName, containerName);
+    await blob.DownloadToStreamAsync(targetStream);
+}
+
+// 下载为字节数组
+public async Task&lt;byte[]&gt; DownloadAsByteArrayAsync(
+    string blobName, string containerName = null)
+{
+    var blob = GetBlobReference(blobName, containerName);
+    await blob.FetchAttributesAsync();
+    byte[] bytes = new byte[blob.Properties.Length];
+    await blob.DownloadToByteArrayAsync(bytes, 0);
+    return bytes;
+}</code></pre>
+
+<h2 id="s3-6">3.6 列出 Blob (List Blobs)</h2>
+<p>使用扁平列出模式，按前缀筛选虚拟文件夹下的 Blob。</p>
+
+<pre><code>public class BlobItem
+{
+    public string Name { get; set; }
+    public string Type { get; set; }  // "Blob" or "VirtualDirectory"
+    public long Size { get; set; }
+    public DateTime LastModified { get; set; }
+    public string ContentType { get; set; }
+}
+
+public async Task&lt;List&lt;BlobItem&gt;&gt; ListBlobsAsync(
+    string prefix = null, string containerName = null)
+{
+    var container = GetContainerReference(containerName);
+    var result = new List&lt;BlobItem&gt;();
+    BlobContinuationToken token = null;
+
+    do
+    {
+        BlobResultSegment segment = await container.ListBlobsSegmentedAsync(
+            prefix, useFlatBlobListing: true,
+            BlobListingDetails.Metadata,
+            maxResults: null, token, null, null);
+        token = segment.ContinuationToken;
+
+        foreach (IListBlobItem item in segment.Results)
+        {
+            if (item is CloudBlockBlob blob)
+            {
+                result.Add(new BlobItem
+                {
+                    Name = blob.Name,
+                    Size = blob.Properties.Length,
+                    LastModified = blob.Properties.LastModified
+                        ?.DateTime ?? DateTime.MinValue,
+                    ContentType = blob.Properties.ContentType,
+                    Type = "Blob"
+                });
+            }
+            else if (item is CloudBlobDirectory dir)
+            {
+                result.Add(new BlobItem
+                {
+                    Name = dir.Prefix, Type = "VirtualDirectory"
+                });
+            }
+        }
+    } while (token != null);
+    return result;
+}</code></pre>
+
+<h2 id="s3-7">3.7 删除 Blob (Delete Blob)</h2>
+<pre><code>// 删除单个 Blob
+public async Task&lt;bool&gt; DeleteBlobAsync(
+    string blobName, string containerName = null)
+{
+    var blob = GetBlobReference(blobName, containerName);
+    return await blob.DeleteIfExistsAsync();
+}
+
+// 批量删除（按前缀）
+public async Task&lt;int&gt; DeleteBlobsByPrefixAsync(
+    string prefix, string containerName = null)
+{
+    var blobs = await ListBlobsAsync(prefix, containerName);
+    int count = 0;
+    foreach (var blob in blobs.Where(b =&gt; b.Type == "Blob"))
+    {
+        if (await DeleteBlobAsync(blob.Name, containerName))
+            count++;
+    }
+    return count;
+}</code></pre>
+
+<h2 id="s3-8">3.8 删除容器 (Delete Container)</h2>
+<pre><code>public async Task&lt;bool&gt; DeleteContainerAsync(
+    string containerName = null)
+{
+    var container = GetContainerReference(containerName);
+    return await container.DeleteIfExistsAsync();
+}</code></pre>
+
+<h2 id="s3-9">3.9 复制 Blob (Copy Blob)</h2>
+<pre><code>public async Task CopyBlobAsync(
+    string sourceBlobName, string destBlobName,
+    string sourceContainerName = null,
+    string destContainerName = null)
+{
+    if (string.IsNullOrEmpty(sourceBlobName))
+        throw new ArgumentNullException(nameof(sourceBlobName));
+    if (string.IsNullOrEmpty(destBlobName))
+        throw new ArgumentNullException(nameof(destBlobName));
+
+    var sourceContainer = GetContainerReference(sourceContainerName);
+    var sourceBlob = sourceContainer.GetBlockBlobReference(sourceBlobName);
+    await sourceBlob.FetchAttributesAsync();
+
+    var destBlob = GetBlobReference(destBlobName, destContainerName);
+    string sourceUri = sourceBlob.SnapshotQualifiedStorageUri
+        .PrimaryUri.AbsoluteUri;
+    await destBlob.StartCopyAsync(new Uri(sourceUri));
+}</code></pre>
+
+<h2 id="s3-10">3.10 检查 Blob 是否存在 (Blob Exists)</h2>
+<pre><code>public async Task&lt;bool&gt; BlobExistsAsync(
+    string blobName, string containerName = null)
+{
+    var blob = GetBlobReference(blobName, containerName);
+    return await blob.ExistsAsync();
+}</code></pre>
+
+<h2 id="s3-11">3.11 获取 Blob 属性 (Get Blob Properties)</h2>
+<pre><code>public class BlobPropertiesInfo
+{
+    public string Name { get; set; }
+    public long Size { get; set; }
+    public string ContentType { get; set; }
+    public DateTime LastModified { get; set; }
+    public string ETag { get; set; }
+    public string BlobType { get; set; }
+    public string LeaseStatus { get; set; }
+    public IDictionary&lt;string, string&gt; Metadata { get; set; }
+}
+
+public async Task&lt;BlobPropertiesInfo&gt; GetBlobPropertiesAsync(
+    string blobName, string containerName = null)
+{
+    var blob = GetBlobReference(blobName, containerName);
+    await blob.FetchAttributesAsync();
+
+    return new BlobPropertiesInfo
+    {
+        Name = blob.Name,
+        Size = blob.Properties.Length,
+        ContentType = blob.Properties.ContentType,
+        LastModified = blob.Properties.LastModified?.DateTime ?? DateTime.MinValue,
+        ETag = blob.Properties.ETag,
+        BlobType = blob.Properties.BlobType.ToString(),
+        LeaseStatus = blob.Properties.LeaseStatus.ToString(),
+        Metadata = blob.Metadata
+    };
+}</code></pre>
+
+<h2 id="s3-12">3.12 批量下载为 ZIP (Batch Download as ZIP)</h2>
+<p>与 AzureFileService 类似，支持保存到本地路径和直接返回 MemoryStream。</p>
+
+<pre><code>public async Task DownloadAsZipAsync(
+    string prefix = null,
+    List&lt;string&gt; blobNames = null,
+    string localZipPath = null,
+    string containerName = null)
+{
+    if (string.IsNullOrEmpty(localZipPath))
+    {
+        string zipDir = HttpContext.Current.Server.MapPath("~/App_Data/Downloads");
+        if (!Directory.Exists(zipDir)) Directory.CreateDirectory(zipDir);
+
+        string prefixSafe = string.IsNullOrEmpty(prefix)
+            ? "blobs" : prefix.Replace("/", "_").Replace("\\", "_");
+        localZipPath = Path.Combine(zipDir,
+            $"{prefixSafe}_{DateTime.Now:yyyyMMdd_HHmmss}.zip");
+    }
+
+    var allBlobs = await ListBlobsAsync(prefix, containerName);
+    IEnumerable&lt;BlobItem&gt; blobsToDownload = allBlobs.Where(b =&gt; b.Type == "Blob");
+
+    if (blobNames != null &amp;&amp; blobNames.Any())
+    {
+        blobsToDownload = blobsToDownload.Where(b =&gt;
+            blobNames.Contains(Path.GetFileName(b.Name),
+                StringComparer.OrdinalIgnoreCase));
+    }
+
+    if (!blobsToDownload.Any())
+        throw new InvalidOperationException("没有找到可下载的 Blob。");
+
+    using (var zipStream = new FileStream(localZipPath, FileMode.Create))
+    using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create))
+    {
+        foreach (var blobItem in blobsToDownload)
+        {
+            using (var ms = new MemoryStream())
+            {
+                await DownloadToStreamAsync(blobItem.Name, ms, containerName);
+                ms.Position = 0;
+
+                string entryName = Path.GetFileName(blobItem.Name);
+                var zipEntry = archive.CreateEntry(
+                    entryName, CompressionLevel.Optimal);
+                using (var entryStream = zipEntry.Open())
+                    await ms.CopyToAsync(entryStream);
+            }
+        }
+    }
+}</code></pre>
+
+<!-- Section 4 -->
+<h1 id="s4">4. Controller 层调用示例</h1>
+
+<h2>4.1 基础 Controller 配置</h2>
+<pre><code>using System.Web.Mvc;
+
+public class AzureStorageController : Controller
+{
+    private readonly AzureFileService _fileService;
+    private readonly BlobStorageService _blobService;
+
+    public AzureStorageController()
+    {
+        string connectionString = System.Configuration.ConfigurationManager
+            .ConnectionStrings["AzureStorageConnection"].ConnectionString;
+
+        _fileService = new AzureFileService(connectionString, "my-file-share");
+        _blobService = new BlobStorageService(connectionString, "my-blob-container");
+    }
+}</code></pre>
+
+<h2>4.2 File Storage 操作示例</h2>
+<pre><code>// 上传文件
+public async Task&lt;ActionResult&gt; UploadFile()
+{
+    if (Request.Files.Count == 0)
+        return Json(new { success = false, message = "未选择文件" });
+
+    var file = Request.Files[0];
+    string directoryPath = Request.Form["directoryPath"];
+    string shareName = Request.Form["shareName"];
+
+    using (var stream = file.InputStream)
+    {
+        await _fileService.UploadFromStreamAsync(
+            stream, file.FileName, directoryPath, shareName);
+    }
+
+    return Json(new { success = true,
+        message = $"文件 {file.FileName} 上传成功" });
+}
+
+// 列出文件
+public async Task&lt;ActionResult&gt; ListFiles(
+    string directoryPath = null, string shareName = null)
+{
+    var result = await _fileService.ListFilesAndDirectoriesAsync(
+        directoryPath, shareName);
+    return Json(new
+    {
+        success = true,
+        files = result.Files.Select(f =&gt; new { f.Name, f.Size, f.LastModified }),
+        directories = result.Directories.Select(d =&gt; d.Name)
+    }, JsonRequestBehavior.AllowGet);
+}
+
+// 批量下载 ZIP
+public async Task&lt;ActionResult&gt; DownloadAsZip(string directoryPath)
+{
+    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+    string zipFileName = $"download_{timestamp}.zip";
+
+    var zipStream = await _fileService.DownloadAsZipStreamAsync(
+        directoryPath, zipFileName: zipFileName);
+
+    return File(zipStream, "application/zip", zipFileName);
+}</code></pre>
+
+<h2>4.3 Blob Storage 操作示例</h2>
+<pre><code>// 上传 Blob
+public async Task&lt;ActionResult&gt; UploadBlob()
+{
+    if (Request.Files.Count == 0)
+        return Json(new { success = false, message = "未选择文件" });
+
+    var file = Request.Files[0];
+    string blobName = Request.Form["blobName"] ?? file.FileName;
+    string containerName = Request.Form["containerName"];
+
+    using (var stream = file.InputStream)
+    {
+        await _blobService.UploadFromStreamAsync(
+            stream, blobName, containerName, file.ContentType);
+    }
+
+    return Json(new { success = true,
+        message = $"Blob {blobName} 上传成功" });
+}
+
+// 批量下载 ZIP
+public async Task&lt;ActionResult&gt; DownloadBlobsAsZip(string prefix = null)
+{
+    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+    string zipFileName = $"blob_download_{timestamp}.zip";
+
+    var zipStream = await _blobService.DownloadAsZipStreamAsync(
+        prefix, zipFileName: zipFileName);
+
+    return File(zipStream, "application/zip", zipFileName);
+}</code></pre>
+
+<!-- Section 5 -->
+<h1 id="s5">5. Web.config 配置</h1>
+<pre><code>&lt;configuration&gt;
+  &lt;connectionStrings&gt;
+    &lt;add name="AzureStorageConnection"
+      connectionString="DefaultEndpointsProtocol=https;
+        AccountName=&lt;your-account-name&gt;;
+        AccountKey=&lt;your-account-key&gt;;
+        EndpointSuffix=core.windows.net" /&gt;
+  &lt;/connectionStrings&gt;
+
+  &lt;appSettings&gt;
+    &lt;add key="AzureFileShareName" value="my-file-share" /&gt;
+    &lt;add key="AzureBlobContainerName" value="my-blob-container" /&gt;
+  &lt;/appSettings&gt;
+
+  &lt;system.web&gt;
+    &lt;!-- 增大上传限制（约 1GB） --&gt;
+    &lt;httpRuntime maxRequestLength="1048576" executionTimeout="3600" /&gt;
+  &lt;/system.web&gt;
+
+  &lt;system.webServer&gt;
+    &lt;security&gt;
+      &lt;requestFiltering&gt;
+        &lt;!-- IIS 上传限制（约 1GB） --&gt;
+        &lt;requestLimits maxAllowedContentLength="1073741824" /&gt;
+      &lt;/requestFiltering&gt;
+    &lt;/security&gt;
+  &lt;/system.webServer&gt;
+&lt;/configuration&gt;</code></pre>
+
+<!-- Section 6 -->
+<h1 id="s6">6. NuGet 包引用</h1>
+<pre><code># 核心 SDK（包含 File Storage 和 Blob Storage）
+Install-Package WindowsAzure.Storage -Version 9.3.3
+
+# 如果只需要 Blob Storage，也可以单独安装：
+Install-Package Microsoft.Azure.Storage.Blob -Version 11.2.3
+
+# JSON 序列化
+Install-Package Newtonsoft.Json</code></pre>
+
+<p><strong>packages.config</strong> 手动添加：</p>
+<pre><code>&lt;packages&gt;
+  &lt;package id="WindowsAzure.Storage" version="9.3.3"
+    targetFramework="net472" /&gt;
+  &lt;package id="Newtonsoft.Json" version="13.0.3"
+    targetFramework="net472" /&gt;
+  &lt;package id="Microsoft.Azure.Storage.Common" version="11.1.7"
+    targetFramework="net472" /&gt;
+&lt;/packages&gt;</code></pre>
+
+<!-- Section 7 -->
+<h1 id="s7">7. 常见问题与注意事项</h1>
+
+<h2>7.1 连接字符串安全</h2>
+<table>
+  <thead><tr><th>建议</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>不要硬编码</td><td>始终将连接字符串放在 Web.config 或 Azure Key Vault 中</td></tr>
+    <tr><td>不要提交到版本库</td><td>在 .gitignore 中排除 Web.config 或使用 config transforms</td></tr>
+    <tr><td>使用 Managed Identity</td><td>部署到 Azure App Service 时优先使用托管标识</td></tr>
+  </tbody>
+</table>
+
+<h2>7.2 文件大小限制</h2>
+<table>
+  <thead><tr><th>存储类型</th><th>单文件上限</th><th>建议策略</th></tr></thead>
+  <tbody>
+    <tr><td>Azure File Storage</td><td>4 TB（共享配额内）</td><td>SMB 协议可直接挂载</td></tr>
+    <tr><td>Azure Blob Storage</td><td>190.7 TB（Block Blob）</td><td>大文件使用分块上传</td></tr>
+    <tr><td>ASP.NET 上传</td><td>取决于配置</td><td>调整 maxRequestLength 和 maxAllowedContentLength</td></tr>
+  </tbody>
+</table>
+
+<h2>7.3 ZIP 下载路径策略</h2>
+<table>
+  <thead><tr><th>方案</th><th>路径</th><th>适用场景</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag tag-green">推荐</span> App_Data</td><td><code>~/App_Data/Downloads/</code></td><td>文件不直接对外暴露，通过 Controller 下载</td></tr>
+    <tr><td>临时目录</td><td><code>Path.GetTempPath()</code></td><td>短期使用，系统自动清理</td></tr>
+    <tr><td>专用下载目录</td><td><code>~/Downloads/</code></td><td>需配合 URL Rewrite 或权限控制</td></tr>
+  </tbody>
+</table>
+
+<h2>7.4 两个服务的选择建议</h2>
+<table>
+  <thead><tr><th>对比维度</th><th>Azure File Storage</th><th>Azure Blob Storage</th></tr></thead>
+  <tbody>
+    <tr><td>文件系统语义</td><td>完整目录层级、文件锁定</td><td>扁平命名空间，虚拟文件夹</td></tr>
+    <tr><td>SMB/NFS 协议</td><td>支持，可直接挂载</td><td>不支持</td></tr>
+    <tr><td>可扩展性</td><td>5 TB/共享</td><td>无上限（账户级别）</td></tr>
+    <tr><td>访问层级</td><td>标准/高级</td><td>热/冷/归档</td></tr>
+    <tr><td>成本</td><td>相对较高</td><td>相对较低</td></tr>
+  </tbody>
+</table>
+
+<h2>7.5 错误处理最佳实践</h2>
+<pre><code>try
+{
+    await _fileService.UploadFileAsync(localPath, "documents/reports");
+}
+catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 404)
+{
+    // 文件共享或目录不存在，先创建再上传
+    await _fileService.CreateDirectoryAsync("documents/reports");
+    await _fileService.UploadFileAsync(localPath, "documents/reports");
+}
+catch (StorageException ex)
+{
+    // 记录详细错误信息
+    string errorCode = ex.RequestInformation
+        .ExtendedErrorInformation?.ErrorCode;
+    string errorMessage = ex.RequestInformation
+        .ExtendedErrorInformation?.ErrorMessage;
+    // Log: $"Azure Storage Error: {errorCode} - {errorMessage}"
+    throw;
+}</code></pre>
+
+<div class="footer">
+  <p>文档结束 &nbsp;|&nbsp; 如有疑问请联系开发团队</p>
+</div>
+
+</div>
+</body>
+</html>

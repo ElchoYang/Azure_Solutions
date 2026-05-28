@@ -1,0 +1,287 @@
+@model AzureFileShareDemo.Models.FileListModel
+@{
+    ViewBag.Title = "文件管理";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>文件管理 <small>@Model.CurrentPath</small></h2>
+    </div>
+</div>
+
+<!-- 面包屑导航 -->
+<div class="row">
+    <div class="col-md-12">
+        <ol class="breadcrumb">
+            <li><a href="@Url.Action("Index", "FileShare")"><span class="glyphicon glyphicon-home"></span> 根目录</a></li>
+            @if (!string.IsNullOrEmpty(Model.CurrentPath))
+            {
+                var paths = Model.CurrentPath.Split('/');
+                var currentPath = "";
+                for (int i = 0; i < paths.Length; i++)
+                {
+                    currentPath += (i > 0 ? "/" : "") + paths[i];
+                    <li>
+                        <a href="@Url.Action("Index", "FileShare", new { path = currentPath })">@paths[i]</a>
+                    </li>
+                }
+            }
+        </ol>
+    </div>
+</div>
+
+<!-- 工具栏 -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="btn-toolbar" role="toolbar">
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" onclick="uploadFile('@Model.CurrentPath')">
+                    <span class="glyphicon glyphicon-upload"></span> 上传文件
+                </button>
+                <button type="button" class="btn btn-default" onclick="createFolder('@Model.CurrentPath')">
+                    <span class="glyphicon glyphicon-folder-open"></span> 新建文件夹
+                </button>
+                <button type="button" class="btn btn-default" onclick="refreshList()">
+                    <span class="glyphicon glyphicon-refresh"></span> 刷新
+                </button>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-info" onclick="migrateToAzure()">
+                    <span class="glyphicon glyphicon-transfer"></span> 迁移到Azure
+                </button>
+            </div>
+            <div class="btn-group">
+                <form class="navbar-form navbar-left" action="@Url.Action("Search", "FileShare")" method="get">
+                    <div class="form-group">
+                        <input type="text" name="keyword" class="form-control" placeholder="搜索文件..." />
+                    </div>
+                    <input type="hidden" name="path" value="@Model.CurrentPath" />
+                    <button type="submit" class="btn btn-default">
+                        <span class="glyphicon glyphicon-search"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 文件列表 -->
+<div class="row">
+    <div class="col-md-12">
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                @ViewBag.Error
+            </div>
+        }
+
+        <table class="table table-striped table-hover" id="fileListTable">
+            <thead>
+                <tr>
+                    <th width="40"><input type="checkbox" id="selectAll" /></th>
+                    <th width="40"></th>
+                    <th>名称</th>
+                    <th width="120">大小</th>
+                    <th width="180">修改时间</th>
+                    <th width="200">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.ParentPath != null)
+                {
+                    <tr>
+                        <td></td>
+                        <td><span class="glyphicon glyphicon-arrow-up text-muted"></span></td>
+                        <td colspan="4">
+                            <a href="@Url.Action("Index", "FileShare", new { path = Model.ParentPath })">.. 返回上级目录</a>
+                        </td>
+                    </tr>
+                }
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td><input type="checkbox" class="file-checkbox" value="@item.FullPath" /></td>
+                        <td>
+                            @if (item.IsDirectory)
+                            {
+                                <span class="glyphicon glyphicon-folder text-warning"></span>
+                            }
+                            else
+                            {
+                                <span class="glyphicon glyphicon-file text-info"></span>
+                            }
+                        </td>
+                        <td>
+                            @if (item.IsDirectory)
+                            {
+                                <a href="@Url.Action("Index", "FileShare", new { path = item.FullPath })">@item.Name</a>
+                            }
+                            else
+                            {
+                                <span>@item.Name</span>
+                            }
+                        </td>
+                        <td>@item.SizeFormatted</td>
+                        <td>
+                            @(item.LastModified?.ToString("yyyy-MM-dd HH:mm") ?? "-")
+                        </td>
+                        <td>
+                            @if (item.IsDirectory)
+                            {
+                                <a href="@Url.Action("Index", "FileShare", new { path = item.FullPath })" class="btn btn-xs btn-default">打开</a>
+                            }
+                            else
+                            {
+                                <a href="@Url.Action("Download", "FileShare", new { path = item.FullPath })" class="btn btn-xs btn-success">下载</a>
+                            }
+                            <button class="btn btn-xs btn-info" onclick="getFileInfo('@item.FullPath')">详情</button>
+                            <button class="btn btn-xs btn-danger" onclick="deleteFile('@item.FullPath')">删除</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.Items.Count == 0)
+        {
+            <div class="alert alert-info">
+                此目录为空
+            </div>
+        }
+    </div>
+</div>
+
+<!-- 分页 -->
+@if (Model.HasMore)
+{
+    <div class="row">
+        <div class="col-md-12 text-center">
+            <button class="btn btn-default" onclick="loadMore('@Model.CurrentPath', '@Model.NextMarker')">
+                加载更多 (@Model.TotalCount)
+            </button>
+        </div>
+    </div>
+}
+
+<!-- 上传模态框 -->
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">上传文件</h4>
+            </div>
+            <form action="@Url.Action("UploadFile", "FileShare")" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="file" name="file" id="fileInput" class="form-control" />
+                    <input type="hidden" name="targetPath" id="uploadTargetPath" value="" />
+                    <div class="progress" style="margin-top: 10px; display: none;">
+                        <div class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">上传</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 创建文件夹模态框 -->
+<div class="modal fade" id="createFolderModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">新建文件夹</h4>
+            </div>
+            <form id="createFolderForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>文件夹名称</label>
+                        <input type="text" name="directoryName" id="folderName" class="form-control" required />
+                    </div>
+                    <input type="hidden" name="path" id="folderTargetPath" value="" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 上传文件
+        function uploadFile(path) {
+            $('#uploadTargetPath').val(path || '');
+            $('#uploadModal').modal('show');
+        }
+
+        // 创建文件夹
+        function createFolder(path) {
+            $('#folderTargetPath').val(path || '');
+            $('#folderName').val('');
+            $('#createFolderModal').modal('show');
+        }
+
+        // 刷新列表
+        function refreshList() {
+            location.reload();
+        }
+
+        // 加载更多
+        function loadMore(path, marker) {
+            $.get('@Url.Action("LoadMore", "FileShare")', { path: path, marker: marker }, function(html) {
+                $('#fileListTable tbody').append(html);
+            });
+        }
+
+        // 获取文件详情
+        function getFileInfo(path) {
+            $.get('@Url.Action("GetFileInfo", "FileShare")', { path: path }, function(result) {
+                if (result.success) {
+                    alert('文件: ' + result.data.name + '\n大小: ' + formatSize(result.data.length) + '\n类型: ' + result.data.contentType);
+                } else {
+                    alert('获取失败: ' + result.message);
+                }
+            });
+        }
+
+        // 删除文件
+        function deleteFile(path) {
+            if (!confirm('确定要删除这个文件吗?')) return;
+            
+            $.post('@Url.Action("Delete", "FileShare")', { path: path }, function(result) {
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert('删除失败: ' + result.message);
+                }
+            });
+        }
+
+        // 迁移到Azure
+        function migrateToAzure() {
+            window.location.href = '@Url.Action("Migrate", "FileShare")';
+        }
+
+        // 格式化文件大小
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            var k = 1024;
+            var sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            var i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 全选
+        $('#selectAll').change(function() {
+            $('.file-checkbox').prop('checked', $(this).prop('checked'));
+        });
+    </script>
+}

@@ -1,0 +1,228 @@
+/* Azure File Share Demo - Site.css */
+
+body {
+    padding-top: 70px;
+    padding-bottom: 30px;
+}
+
+/* 面包屑样式 */
+.breadcrumb {
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+/* 文件列表表格 */
+.table-hover tbody tr:hover {
+    background-color: #f5f9fc;
+}
+
+.file-checkbox {
+    cursor: pointer;
+}
+
+/* 图标样式 */
+.glyphicon {
+    margin-right: 5px;
+}
+
+/* 工具栏间距 */
+.btn-toolbar {
+    margin-bottom: 15px;
+}
+
+.btn-toolbar .btn-group {
+    margin-right: 10px;
+}
+
+/* 模态框样式优化 */
+.modal-header {
+    background-color: #337ab7;
+    color: white;
+}
+
+.modal-header .close {
+    color: white;
+}
+
+/* 进度条样式 */
+.progress {
+    height: 25px;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    line-height: 25px;
+    font-size: 14px;
+}
+
+/* 面板样式 */
+.panel {
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.panel-heading {
+    border-radius: 5px 5px 0 0;
+}
+
+/* 帮助块样式 */
+.help-block {
+    font-size: 12px;
+    color: #777;
+}
+
+/* 输入组按钮样式 */
+.input-group .btn {
+    height: 34px;
+}
+
+/* 警告框样式 */
+.alert {
+    border-radius: 4px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .btn-toolbar {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .btn-toolbar .btn-group {
+        margin-bottom: 10px;
+        margin-right: 0;
+    }
+    
+    .table-responsive {
+        border: none;
+    }
+}
+
+/* Jumbotron样式 */
+.jumbotron {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 40px;
+    margin-bottom: 30px;
+}
+
+.jumbotron h1 {
+    color: #2a6496;
+}
+
+.jumbotron .btn {
+    margin-right: 10px;
+}
+
+/* 拖放区域样式 */
+.drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.drop-zone.dragover {
+    border-color: #337ab7;
+    background-color: #f0f7ff;
+}
+
+/* 文件类型图标颜色 */
+.text-warning {
+    color: #f0ad4e !important;
+}
+
+.text-info {
+    color: #5bc0de !important;
+}
+
+.text-muted {
+    color: #999 !important;
+}
+
+/* 复选框居中 */
+.table th:first-child,
+.table td:first-child {
+    text-align: center;
+}
+
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #337ab7;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 表格信息栏 */
+.table-info {
+    background-color: #d9edf7;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+/* 统计数字样式 */
+.stat-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #337ab7;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #777;
+    text-transform: uppercase;
+}
+
+/* 卡片布局 */
+.dashboard-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.dashboard-card h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+/* 错误页面 */
+.error-page {
+    text-align: center;
+    padding: 100px 20px;
+}
+
+.error-page h1 {
+    font-size: 72px;
+    color: #e74c3c;
+}
+
+/* 搜索框样式 */
+.search-box {
+    position: relative;
+}
+
+.search-box .glyphicon-search {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    color: #999;
+}
+
+/* 工具提示样式 */
+.tooltip-inner {
+    max-width: 300px;
+}

@@ -1,0 +1,259 @@
+@{
+    ViewBag.Title = "文件迁移";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>本地到Azure文件迁移 <small>将本地文件系统迁移到Azure File Share</small></h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">迁移配置</h3>
+            </div>
+            <div class="panel-body">
+                <form id="migrationForm">
+                    <div class="form-group">
+                        <label>本地源目录</label>
+                        <div class="input-group">
+                            <input type="text" name="localPath" id="localPath" class="form-control" 
+                                   placeholder="例如: D:\WorkDocs" required />
+                            <span class="input-group-btn">
+                                <button type="button" class="btn btn-default" onclick="browseFolder()">浏览...</button>
+                            </span>
+                        </div>
+                        <span class="help-block">选择要迁移的本地文件夹</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Azure目标路径</label>
+                        <input type="text" name="azurePath" id="azurePath" class="form-control" 
+                               placeholder="例如: backup/WorkDocs (留空表示根目录)" />
+                        <span class="help-block">Azure File Share中的目标目录路径</span>
+                    </div>
+
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="includeSubdirectories" id="includeSubdirectories" checked />
+                            包含子目录
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success btn-lg" id="startMigrationBtn">
+                            <span class="glyphicon glyphicon-play"></span> 开始迁移
+                        </button>
+                        <button type="button" class="btn btn-warning btn-lg" onclick="syncDirectory()">
+                            <span class="glyphicon glyphicon-refresh"></span> 同步(仅新增/修改)
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">迁移进度</h3>
+            </div>
+            <div class="panel-body">
+                <div id="progressArea" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped active" id="progressBar" style="width: 0%;">
+                            <span id="progressText">0%</span>
+                        </div>
+                    </div>
+                    <div class="well well-sm">
+                        <div id="statusText">准备开始...</div>
+                        <div id="fileCount">已处理: 0 个文件</div>
+                    </div>
+                </div>
+                <div id="idleMessage" class="text-muted">
+                    <span class="glyphicon glyphicon-info-sign"></span>
+                    请在左侧配置迁移参数，然后点击"开始迁移"
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">迁移结果</h3>
+            </div>
+            <div class="panel-body" id="resultArea" style="display: none;">
+                <div class="alert alert-success" id="successResult"></div>
+                <div class="alert alert-danger" id="errorResult" style="display: none;"></div>
+                
+                <h4>统计信息</h4>
+                <table class="table table-bordered">
+                    <tr>
+                        <td>上传成功</td>
+                        <td id="resultUploaded">0</td>
+                    </tr>
+                    <tr>
+                        <td>跳过(已存在)</td>
+                        <td id="resultSkipped">0</td>
+                    </tr>
+                    <tr>
+                        <td>失败</td>
+                        <td id="resultFailed">0</td>
+                    </tr>
+                    <tr>
+                        <td>总耗时</td>
+                        <td id="resultDuration">0秒</td>
+                    </tr>
+                    <tr>
+                        <td>总大小</td>
+                        <td id="resultSize">0 B</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h3 class="panel-title">使用说明</h3>
+            </div>
+            <div class="panel-body">
+                <h4>1. 完整迁移 (开始迁移)</h4>
+                <p>将源目录下的所有文件完整上传到Azure File Share，包括子目录中的所有文件。</p>
+                
+                <h4>2. 增量同步 (同步)</h4>
+                <p>仅上传新文件或已修改的文件，已存在且未修改的文件将被跳过，适合定期备份。</p>
+                
+                <h4>3. 注意事项</h4>
+                <ul>
+                    <li>确保Azure存储账户配置正确</li>
+                    <li>大文件迁移可能需要较长时间</li>
+                    <li>建议先在小规模数据上测试</li>
+                    <li>迁移完成后请检查结果统计</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var isMigrating = false;
+
+        // 浏览文件夹 (需要ActiveX支持，仅IE有效)
+        function browseFolder() {
+            var folderPath = prompt('请输入本地文件夹路径:', 'D:\\');
+            if (folderPath) {
+                $('#localPath').val(folderPath);
+            }
+        }
+
+        // 开始迁移
+        $('#migrationForm').submit(function(e) {
+            e.preventDefault();
+            
+            if (isMigrating) return;
+            
+            var localPath = $('#localPath').val();
+            var azurePath = $('#azurePath').val();
+            var includeSubdir = $('#includeSubdirectories').prop('checked');
+            
+            if (!localPath) {
+                alert('请选择本地源目录');
+                return;
+            }
+
+            isMigrating = true;
+            $('#startMigrationBtn').prop('disabled', true);
+            $('#progressArea').show();
+            $('#idleMessage').hide();
+            $('#resultArea').hide();
+            $('#statusText').text('开始迁移...');
+
+            $.ajax({
+                url: '@Url.Action("StartMigration", "FileShare")',
+                type: 'POST',
+                data: {
+                    localPath: localPath,
+                    azurePath: azurePath,
+                    includeSubdirectories: includeSubdir
+                },
+                success: function(result) {
+                    if (result.success) {
+                        $('#statusText').text('迁移完成!');
+                        $('#progressBar').css('width', '100%').text('100%');
+                        $('#progressText').text('100%');
+                        $('#fileCount').text('已处理: ' + (result.details.UploadedCount + result.details.FailedCount) + ' 个文件');
+                        
+                        $('#resultUploaded').text(result.details.UploadedCount);
+                        $('#resultSkipped').text(result.details.SkippedCount);
+                        $('#resultFailed').text(result.details.FailedCount);
+                        $('#resultDuration').text(result.details.DurationSeconds.toFixed(2) + '秒');
+                        $('#resultSize').text(formatSize(result.details.TotalBytes));
+                        
+                        $('#resultArea').show();
+                        $('#successResult').text(result.message);
+                        
+                        if (result.details.Errors && result.details.Errors.length > 0) {
+                            var errorList = result.details.Errors.map(function(e) {
+                                return e.FilePath + ': ' + e.ErrorMessage;
+                            }).join('\n');
+                            $('#errorResult').text('失败文件:\n' + errorList).show();
+                        }
+                    } else {
+                        alert('迁移失败: ' + result.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('请求失败: ' + error);
+                },
+                complete: function() {
+                    isMigrating = false;
+                    $('#startMigrationBtn').prop('disabled', false);
+                }
+            });
+        });
+
+        // 同步目录
+        function syncDirectory() {
+            var localPath = $('#localPath').val();
+            var azurePath = $('#azurePath').val();
+            
+            if (!localPath) {
+                alert('请选择本地源目录');
+                return;
+            }
+
+            $('#statusText').text('开始同步...');
+            
+            $.ajax({
+                url: '@Url.Action("SyncToAzure", "FileShare")',
+                type: 'POST',
+                data: {
+                    localPath: localPath,
+                    azurePath: azurePath
+                },
+                success: function(result) {
+                    if (result.success) {
+                        alert('同步完成: 上传' + result.uploaded + ', 跳过' + result.skipped + ', 失败' + result.failed);
+                    } else {
+                        alert('同步失败: ' + result.message);
+                    }
+                }
+            });
+        }
+
+        // 格式化文件大小
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            var k = 1024;
+            var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            var i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+}

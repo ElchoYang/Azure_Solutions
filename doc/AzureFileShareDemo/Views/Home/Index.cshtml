@@ -1,0 +1,45 @@
+@{
+    ViewBag.Title = "首页";
+}
+
+<div class="jumbotron">
+    <h1>Azure File Share Demo</h1>
+    <p class="lead">一个使用 ASP.NET MVC 框架操作 Azure Storage File Share 的示例应用程序</p>
+    <p>
+        <a class="btn btn-primary btn-lg" href="@Url.Action("Index", "FileShare")">开始使用</a>
+        <a class="btn btn-default btn-lg" href="@Url.Action("Migrate", "FileShare")">文件迁移</a>
+    </p>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <h2><span class="glyphicon glyphicon-cloud-upload"></span> 文件上传</h2>
+        <p>支持单文件和批量上传，可指定目标目录，上传进度实时显示。</p>
+        <p><a class="btn btn-default" href="@Url.Action("Upload", "FileShare")">了解更多 &raquo;</a></p>
+    </div>
+    <div class="col-md-4">
+        <h2><span class="glyphicon glyphicon-folder-open"></span> 文件浏览</h2>
+        <p>树形目录结构，支持分页加载，文件夹优先排序，文件类型图标显示。</p>
+        <p><a class="btn btn-default" href="@Url.Action("Index", "FileShare")">了解更多 &raquo;</a></p>
+    </div>
+    <div class="col-md-4">
+        <h2><span class="glyphicon glyphicon-transfer"></span> 文件迁移</h2>
+        <p>支持本地到Azure的完整迁移和增量同步，保留目录结构。</p>
+        <p><a class="btn btn-default" href="@Url.Action("Migrate", "FileShare")">了解更多 &raquo;</a></p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <h2><span class="glyphicon glyphicon-download-alt"></span> 文件下载</h2>
+        <p>快速下载单个或批量文件，支持断点续传。</p>
+    </div>
+    <div class="col-md-4">
+        <h2><span class="glyphicon glyphicon-share"></span> 分享链接</h2>
+        <p>生成带SAS令牌的文件分享链接，支持设置有效期。</p>
+    </div>
+    <div class="col-md-4">
+        <h2><span class="glyphicon glyphicon-search"></span> 文件搜索</h2>
+        <p>递归搜索文件名，支持模糊匹配。</p>
+    </div>
+</div>
